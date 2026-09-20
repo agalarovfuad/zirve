@@ -23,3 +23,10 @@ rm -f web/audio/t/*.mp3 web/audio/r/*.mp3 && .venv/bin/python audio-gen.py
 
 ## Məlumat
 `~/Library/Application Support/Zirve/progress.json` — nəticələr, çətin sözlər, mətn anlama faizləri, mövzu.
+
+## Veb tətbiq (PWA) — https://agalarovfuad.github.io/zirve/
+GitHub Pages, `docs/` qovluğundan (repo: github.com/agalarovfuad/zirve). Yeniləmək:
+```
+./build-web.sh && git add -A && git commit -m "yeniləmə" && git push
+```
+Telefonda: Safari → Paylaş → "Ana Ekrana Ekle". İrəliləyiş → "Səsləri oflayn yüklə" (44 MB) — sonra internetsiz.
