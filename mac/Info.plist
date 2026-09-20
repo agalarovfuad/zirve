@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>Zirvə</string>
+  <key>CFBundleDisplayName</key><string>Zirvə</string>
+  <key>CFBundleIdentifier</key><string>az.fuad.zirve</string>
+  <key>CFBundleExecutable</key><string>Zirve</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+  <key>NSMicrophoneUsageDescription</key><string>Danışıq məşqində səsini yazıya çevirmək üçün mikrofon lazımdır.</string>
+  <key>NSSpeechRecognitionUsageDescription</key><string>Danışıq məşqində dediyin cümləni yoxlamaq üçün nitq tanıma lazımdır.</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.education</string>
+</dict></plist>

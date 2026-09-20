@@ -1,0 +1,6 @@
+.venv/
+build/
+build-texts.json
+build-words-need.json
+audio-gen.log
+.DS_Store
