@@ -783,8 +783,8 @@ function openUnit(pid,u,tab){
   if(tx)renderText(p,u,tx);
   // test
   $('#testTitle').textContent=lt.t;
-  {const cnt=unitWords(p,u).length,nq=testSize(unitLessons(u)[0]),nr=Math.round(nq*0.3),mins=Math.round(testSecs(nq)/60);
-  $('#testDesc').innerHTML=u.k==='r'?`${nq} sual · ${mins} dəqiqə · dərs ${unitLessons(u)[0]}–${unitLessons(u)[1]}-in ${cnt} sözündən (çətin sözlər prioritetlə). <b>${PASS}%+</b> = təkrar bitdi, növbəti dərs açılır.`:`${nq} sual · ${mins} dəqiqə · ${nq-nr} sual bu dərsdən (${cnt} söz), ${nr} sual əvvəlkilərdən. Sual azərbaycanca verilir, ingiliscəsini seçirsən; cavabdan sonra söz səslənir. Səhvlər <b>Çətin sözlər</b>ə düşür. <b>${PASS}%+</b> = dərs bitdi, növbəti açılır. Klaviaturada <b>1 2 3 4</b>.`;}
+  {const cnt=unitWords(p,u).length,nq=u.k==='r'?cnt:testSize(unitLessons(u)[0]),nr=Math.round(nq*0.3),mins=Math.round(testSecs(nq)/60);
+  $('#testDesc').innerHTML=u.k==='r'?`${nq} sual · ${mins} dəqiqə · dərs ${unitLessons(u)[0]}–${unitLessons(u)[1]}-in bütün ${cnt} sözü, hər biri bir dəfə. <b>${PASS}%+</b> = təkrar bitdi, növbəti dərs açılır.`:`${nq} sual · ${mins} dəqiqə · ${nq-nr} sual bu dərsdən (${cnt} söz), ${nr} sual əvvəlkilərdən. Sual azərbaycanca verilir, ingiliscəsini seçirsən; cavabdan sonra söz səslənir. Səhvlər <b>Çətin sözlər</b>ə düşür. <b>${PASS}%+</b> = dərs bitdi, növbəti açılır. Klaviaturada <b>1 2 3 4</b>.`;}
   $('#testIntro').hidden=!ok||!unl;$('#testRun').hidden=true;$('#testEnd').hidden=true;
   const ts=$('#testSoon');ts.hidden=ok&&unl;
   ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`:'Bu dərsin testi hazırlanır.')+'</div>';
@@ -890,9 +890,9 @@ function startTest(pid,u){
   const p=P(pid);const cur=unitWords(p,u);
   const before=p.words.slice(0,rangeOf(p,unitLessons(u)[0],unitLessons(u)[0])[0]);
   const prevPool=(pid===2?W.concat(before):before);
-  const NQ=testSize(unitLessons(u)[0]);
+  const NQ=u.k==='r'?cur.length:testSize(unitLessons(u)[0]);   // təkrar: bütün sözlər, hər biri bir dəfə
   let qsWords;
-  if(u.k==='r'){const hard=cur.filter(w=>S.hard[w[1]]);const h=pick(hard,Math.min(15,hard.length));qsWords=shuffle(h.concat(pickWrap(cur.filter(w=>!h.includes(w)),NQ-h.length)));}
+  if(u.k==='r'){qsWords=shuffle(cur);}
   else{
     const nRev=Math.round(NQ*0.3);const hardPrev=prevPool.filter(w=>S.hard[w[1]]);let review=[];
     if(prevPool.length){review=pick(hardPrev,Math.min(Math.round(nRev*0.6),hardPrev.length));const rest=prevPool.filter(w=>!review.includes(w));review=review.concat(pick(rest,nRev-review.length));}
