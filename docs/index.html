@@ -450,7 +450,7 @@ main section.enter{animation:rise .22s var(--ease)}
               <span class="muted" style="font-size:.82rem" id="readHint">Oxuyub bitirəndən sonra bas — mətn və səs 10 dəqiqə bağlanır, suallar açılır. Geri yol yoxdur.</span>
             </div>
           </div>
-          <div class="card"><div class="eyebrow" style="margin-bottom:8px">Əlavə sözlər (siyahıda hələ yoxdur)</div><div class="gloss" id="tGloss"></div></div>
+          <div class="card"><div class="eyebrow" style="margin-bottom:8px">Bu dərsə qədər keçilməyən sözlər</div><div class="gloss" id="tGloss"></div><div class="eyebrow" style="margin:14px 0 8px" id="tAutoHead" hidden>Siyahıda sonra gələn sözlər (dərs nömrəsi ilə)</div><div class="gloss" id="tAuto"></div></div>
           <div class="card" id="tQwrap" hidden>
             <div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="eyebrow">Anlama sualları</div><span id="readScore" class="pill"></span></div>
             <div class="tf" id="tQ"></div>
@@ -514,6 +514,7 @@ main section.enter{animation:rise .22s var(--ease)}
 <script src="texts.js"></script>
 <script src="syllabus.js"></script>
 <script src="speak.js"></script>
+<script src="lemma.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -814,6 +815,22 @@ function markDone(pid,u){
 }
 function toggleHard(w){if(S.hard[w[1]])delete S.hard[w[1]];else{const l=lessonOfWord(w);S.hard[w[1]]={p:l.p,l:l.n,n:0};}save();updateRing();}
 
+// ---------- mətn üçün avtomatik lüğət ----------
+const NAMES={elvin:'Elvin (ad)',aysel:'Aysel (ad)',baku:'Bakı',shirvan:'Şirvan',europe:'Avropa',english:'ingilis dili',saturday:'şənbə',sunday:'bazar',monday:'bazar ertəsi'};
+function autoGloss(p,upto,text,extra){
+  const ex=new Set(extra.map(e=>e[0].toLowerCase().split(/\s*\/\s*/)).flat().map(x=>x.replace(/[^a-z']/g,'')));
+  const rank={};p.words.forEach(w=>{const k=w[1].toLowerCase();if(!(k in rank))rank[k]=w;});
+  const seen=new Set(),out=[];
+  text.split(/[^A-Za-z']+/).filter(Boolean).forEach(tok=>{
+    const ls=lemmas(tok);if(!ls.length||ls.some(l=>ex.has(l)))return;
+    const hit=ls.find(l=>l in rank);
+    if(hit){const w=rank[hit];const ln=lessonOfWord(w).n;if(ln<=upto)return;if(seen.has(hit))return;seen.add(hit);out.push({w:w[1],az:w[3],ln,rank:w[0]});return;}
+    const base=ls[0];if(seen.has(base))return;seen.add(base);
+    out.push({w:tok,az:NAMES[base]||NAMES[ls[1]]||'?',ln:0});
+  });
+  return out.sort((a,b)=>(a.ln||999)-(b.ln||999));
+}
+
 // ---------- reading + "Oxudum" (10 dəqiqəlik sərt kilid) ----------
 const RD={tick:null,total:0,answered:0,right:0,key:null};
 function renderText(p,u,T){
@@ -821,7 +838,11 @@ function renderText(p,u,T){
   $('#tTitle').textContent=T.title;
   $('#tWords').textContent=T.text.split(/\s+/).length+' söz';
   $('#tBody').innerHTML=T.text.split(/\n\n+/).map(x=>'<p>'+esc(x)+'</p>').join('');
-  $('#tGloss').innerHTML=T.extra.map(([a,b])=>`<div><b>${esc(a)}</b> — ${esc(b)}</div>`).join('');
+  const upto=unitLessons(u)[1];const auto=autoGloss(p,upto,T.text,T.extra);
+  const names=auto.filter(x=>!x.ln),later=auto.filter(x=>x.ln);
+  $('#tGloss').innerHTML=T.extra.map(([a,b])=>`<div><b>${esc(a)}</b> — ${esc(b)}</div>`).concat(names.map(x=>`<div><b>${esc(x.w)}</b> — ${esc(x.az)}</div>`)).join('');
+  $('#tAutoHead').hidden=!later.length;
+  $('#tAuto').innerHTML=later.map(x=>`<div><b>${esc(x.w)}</b> — ${esc(x.az)} <span class="muted" style="font-size:.78rem">· Dərs ${x.ln}</span></div>`).join('');
   const q=$('#tQ');q.innerHTML='';RD.total=0;RD.answered=0;RD.right=0;RD.key=ukey(p.id,u);
   (T.q||[]).forEach(([st,ans])=>{
     RD.total++;
