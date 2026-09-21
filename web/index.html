@@ -463,7 +463,7 @@ main section.enter{animation:rise .22s var(--ease)}
           </div>
         </div>
         <div id="testRun" hidden>
-          <div class="test-head"><div class="muted num" id="testPos">1 / —</div><div class="timer num" id="timer">20:00</div></div>
+          <div class="test-head"><div class="muted num" id="testPos">1 / 50</div><div class="timer num" id="timer">20:00</div></div>
           <div class="prog"><i id="testBar" style="width:0%"></i></div>
           <div class="card qcard" id="qcard">
             <div class="prompt" id="qPrompt"></div>
@@ -516,6 +516,7 @@ const el=(t,c,h)=>{const e=document.createElement(t);if(c)e.className=c;if(h!=nu
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a;};
 const pick=(a,n)=>shuffle(a).slice(0,n);
+const pickWrap=(a,n)=>{if(!a.length)return [];let out=[];while(out.length<n)out=out.concat(shuffle(a));return out.slice(0,n);};
 const ICO=id=>`<svg><use href="#${id}"/></svg>`;
 const NATIVE=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.native;
 const HAS_AUDIO=!!NATIVE||(location.protocol==='https:'&&!location.hostname.endsWith('claude.ai'))||location.hostname==='localhost';
@@ -881,13 +882,13 @@ function startTest(pid,u){
   const p=P(pid);const cur=unitWords(p,u);
   const before=p.words.slice(0,rangeOf(p,unitLessons(u)[0],unitLessons(u)[0])[0]);
   const prevPool=(pid===2?W.concat(before):before);
-  const NQ=u.k==='r'?30:Math.min(30,Math.round(cur.length/2));   // 40 söz→20, 50→25, 60+→30
+  const NQ=50;   // hər testdə 50 sual
   let qsWords;
-  if(u.k==='r'){const hard=cur.filter(w=>S.hard[w[1]]);const h=pick(hard,Math.min(10,hard.length));qsWords=shuffle(h.concat(pick(cur.filter(w=>!h.includes(w)),NQ-h.length)));}
+  if(u.k==='r'){const hard=cur.filter(w=>S.hard[w[1]]);const h=pick(hard,Math.min(15,hard.length));qsWords=shuffle(h.concat(pickWrap(cur.filter(w=>!h.includes(w)),NQ-h.length)));}
   else{
     const nRev=Math.round(NQ*0.3);const hardPrev=prevPool.filter(w=>S.hard[w[1]]);let review=[];
     if(prevPool.length){review=pick(hardPrev,Math.min(Math.round(nRev*0.6),hardPrev.length));const rest=prevPool.filter(w=>!review.includes(w));review=review.concat(pick(rest,nRev-review.length));}
-    qsWords=shuffle(pick(cur,NQ-review.length).concat(review));
+    qsWords=shuffle(pickWrap(cur,NQ-review.length).concat(review));
   }
   const pool=prevPool.concat(cur).length>=80?prevPool.concat(cur):p.words.slice(0,PER*2);
   T={p:pid,u,label:unitTitle(p,u).t,qs:qsWords.map(w=>buildQ(w,pool)),i:0,right:0,wrong:[],left:20*60,lock:false};
