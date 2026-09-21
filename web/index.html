@@ -778,7 +778,8 @@ function openUnit(pid,u,tab){
   if(tx)renderText(p,u,tx);
   // test
   $('#testTitle').textContent=lt.t;
-  $('#testDesc').innerHTML=u.k==='r'?`20 sual · 20 dəqiqə · dərs ${(u.n-1)*REV_EVERY+1}–${u.n*REV_EVERY}-in ${PER*REV_EVERY} sözündən (çətin sözlər prioritetlə). <b>${PASS}%+</b> = təkrar bitdi, növbəti dərs açılır.`:`20 sual · 20 dəqiqə · Sual azərbaycanca verilir, ingiliscəsini seçirsən; cavabdan sonra söz səslənir. 14 sual bu dərsdən, 6 sual əvvəlkilərdən. Səhvlər <b>Çətin sözlər</b>ə düşür. <b>${PASS}%+</b> = dərs bitdi, növbəti açılır. Klaviaturada <b>1 2 3 4</b>.`;
+  {const cnt=unitWords(p,u).length,nq=testSize(unitLessons(u)[0]),nr=Math.round(nq*0.3),mins=Math.round(testSecs(nq)/60);
+  $('#testDesc').innerHTML=u.k==='r'?`${nq} sual · ${mins} dəqiqə · dərs ${unitLessons(u)[0]}–${unitLessons(u)[1]}-in ${cnt} sözündən (çətin sözlər prioritetlə). <b>${PASS}%+</b> = təkrar bitdi, növbəti dərs açılır.`:`${nq} sual · ${mins} dəqiqə · ${nq-nr} sual bu dərsdən (${cnt} söz), ${nr} sual əvvəlkilərdən. Sual azərbaycanca verilir, ingiliscəsini seçirsən; cavabdan sonra söz səslənir. Səhvlər <b>Çətin sözlər</b>ə düşür. <b>${PASS}%+</b> = dərs bitdi, növbəti açılır. Klaviaturada <b>1 2 3 4</b>.`;}
   $('#testIntro').hidden=!ok||!unl;$('#testRun').hidden=true;$('#testEnd').hidden=true;
   const ts=$('#testSoon');ts.hidden=ok&&unl;
   ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`:'Bu dərsin testi hazırlanır.')+'</div>';
