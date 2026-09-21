@@ -60,6 +60,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         guard message.name == "native" else { return }
         if let s = message.body as? String {
             try? s.data(using: .utf8)?.write(to: stateURL, options: .atomic)
+            // gündəlik ehtiyat nüsxə (son 14 gün)
+            let dir = stateURL.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"
+            let day = dir.appendingPathComponent("progress-\(f.string(from: Date())).json")
+            try? s.data(using: .utf8)?.write(to: day, options: .atomic)
+            if let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
+                for old in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }).dropLast(14) { try? FileManager.default.removeItem(at: old) }
+            }
         } else if let d = message.body as? [String: Any], let cmd = d["cmd"] as? String {
             switch cmd {
             case "listen": startListening()
