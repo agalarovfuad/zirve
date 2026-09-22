@@ -299,6 +299,7 @@ main section.enter{animation:rise .22s var(--ease)}
 .spk-stats{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
 .spk-stats b{color:var(--ink);font-family:var(--display)}
 /* review tiles, locks, reading cover */
+.tbl.shuf tbody tr{animation:rise .25s var(--ease)}
 .player.locked{opacity:.45;pointer-events:none}
 .tile.rev{background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--warm-soft) 60%,var(--surface)));border-color:color-mix(in srgb,var(--warm) 50%,var(--line))}
 .tile.rev .n{color:var(--warm-ink)}
@@ -416,6 +417,7 @@ main section.enter{animation:rise .22s var(--ease)}
       </div>
 
       <div id="lt-words">
+        <div class="row" style="justify-content:flex-end;margin-bottom:8px" id="wtools"><button class="btn sm" id="wShuffle">🔀 Qarışdır</button><button class="btn sm ghost" id="wOrder" hidden>↕ Sıra ilə</button></div>
         <div class="card" style="padding:6px 8px"><div class="tblwrap"><table class="tbl" id="wtbl"></table></div></div>
         <div id="lSoon" class="empty" hidden></div>
         <div class="row" style="margin-top:14px">
@@ -735,6 +737,28 @@ function renderGrid(){
 function renderHome(){if(selPart==null)selPart=S.cursor.p;renderTabs();renderToday();renderGrid();}
 function openPart(id){selPart=id;renderHome();if(view!=='home')show('home');else window.scrollTo({top:0,behavior:'smooth'});}
 
+// ---------- söz cədvəli (qarışdırma ilə) ----------
+const WT={shuffled:false};
+function renderWordTable(p,u,shuffledOrder){
+  let ws=unitWords(p,u);if(shuffledOrder)ws=shuffle(ws);
+  const hasIpa=ws.some(w=>w[4]);const t=$('#wtbl');
+  t.innerHTML=`<thead><tr><th>#</th><th>Word</th>${hasIpa?'<th>Oxunuş</th>':''}<th>Növ</th><th>Məna</th><th></th></tr></thead>`;
+  const tb=el('tbody');
+  ws.forEach(w=>{
+    const tr=el('tr');
+    tr.innerHTML=`<td class="rk num">${w[0]}</td><td class="w">${esc(w[1])}</td>${hasIpa?`<td class="ipa">${esc(w[4]||'')}</td>`:''}<td class="pos">${esc(w[2])}</td><td>${esc(w[3])}</td><td class="ac"></td>`;
+    const sp=el('button','mini',ICO('i-spk'));sp.title='Səsləndir';sp.addEventListener('click',()=>{sayWord(w);sp.classList.add('playing');setTimeout(()=>sp.classList.remove('playing'),900);});
+    const st=el('button','mini'+(S.hard[w[1]]?' on':''),S.hard[w[1]]?'★':'☆');st.title='Çətin sözlərə at';
+    st.addEventListener('click',()=>{toggleHard(w);st.className='mini'+(S.hard[w[1]]?' on':'');st.textContent=S.hard[w[1]]?'★':'☆';});
+    tr.lastElementChild.append(sp,st);tr.querySelector('.w').addEventListener('click',()=>sayWord(w));
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  if(shuffledOrder){t.classList.remove('shuf');void t.offsetWidth;t.classList.add('shuf');}
+}
+$('#wShuffle').addEventListener('click',()=>{WT.shuffled=true;$('#wOrder').hidden=false;renderWordTable(P(curPart),curU,true);});
+$('#wOrder').addEventListener('click',()=>{WT.shuffled=false;$('#wOrder').hidden=true;renderWordTable(P(curPart),curU,false);});
+
 // ---------- unit (lesson / review) ----------
 function openUnit(pid,u,tab){
   const p=P(pid);if(!u)return;
@@ -755,23 +779,11 @@ function openUnit(pid,u,tab){
   $('#lGoTest').hidden=u.k==='s';
   if(u.k==='s'){spkSetup(pid,u,spk,unl);}
   // words
-  const t=$('#wtbl');t.innerHTML='';$('#lSoon').hidden=true;
+  $('#lSoon').hidden=true;$('#wtools').hidden=!(p.kind==='vocab'&&(ok||u.k==='s'));
   if(p.kind==='vocab'&&(ok||u.k==='s')){
-    const ws=unitWords(p,u),hasIpa=ws.some(w=>w[4]);
-    t.innerHTML=`<thead><tr><th>#</th><th>Word</th>${hasIpa?'<th>Oxunuş</th>':''}<th>Növ</th><th>Məna</th><th></th></tr></thead>`;
-    const tb=el('tbody');
-    ws.forEach(w=>{
-      const tr=el('tr');
-      tr.innerHTML=`<td class="rk num">${w[0]}</td><td class="w">${esc(w[1])}</td>${hasIpa?`<td class="ipa">${esc(w[4]||'')}</td>`:''}<td class="pos">${esc(w[2])}</td><td>${esc(w[3])}</td><td class="ac"></td>`;
-      const sp=el('button','mini',ICO('i-spk'));sp.title='Səsləndir';sp.addEventListener('click',()=>{sayWord(w);sp.classList.add('playing');setTimeout(()=>sp.classList.remove('playing'),900);});
-      const st=el('button','mini'+(S.hard[w[1]]?' on':''),S.hard[w[1]]?'★':'☆');st.title='Çətin sözlərə at';
-      st.addEventListener('click',()=>{toggleHard(w);st.className='mini'+(S.hard[w[1]]?' on':'');st.textContent=S.hard[w[1]]?'★':'☆';});
-      tr.lastElementChild.append(sp,st);tr.querySelector('.w').addEventListener('click',()=>sayWord(w));
-      tb.appendChild(tr);
-    });
-    t.appendChild(tb);
+    WT.shuffled=false;$('#wOrder').hidden=true;renderWordTable(p,u,false);
   } else {
-    $('#lSoon').hidden=false;
+    $('#wtbl').innerHTML='';$('#lSoon').hidden=false;
     $('#lSoon').innerHTML=p.kind==='vocab'?'Bu dərsin sözləri hazırlanır.':`<b>${esc(p.syllabus[u.n-1].title)}</b><br><span class="muted">${esc(p.syllabus[u.n-1].sub)}</span><br><br>Bu dərsin mövzusu, mətni və testi hazırlanır.`;
   }
   $('#lGoTest').disabled=!ok||!unl;
