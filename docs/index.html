@@ -1247,11 +1247,14 @@ function examEnd(){
   updateRing();
   $('#exRun').hidden=true;$('#exEnd').hidden=false;
   $('#exEndEyebrow').textContent=e.title+' · '+right+' / '+n+' düz';
-  const big=$('#exPct');big.className='big num '+(ok?'':pct>=e.pass-15?'mid':'low');countUp(big,pct);
+  const big=$('#exPct');big.className='big num '+(ok?'':pct>=e.pass-15?'mid':'low');
+  if(e.band){const raw=Math.round(right/n*40);const T=[[39,9],[37,8.5],[35,8],[32,7.5],[30,7],[26,6.5],[23,6],[18,5.5],[16,5],[13,4.5],[10,4],[8,3.5],[6,3],[4,2.5]];let b=2;for(const [r,v] of T){if(raw>=r){b=v;break;}}
+    big.textContent='Band '+b.toFixed(1);big.style.fontSize='3.2rem';}
+  else{big.style.fontSize='';countUp(big,pct);}
   const v=$('#exVerdict');v.className='verdict '+(ok?'ok':'no');
-  v.textContent=ok?e.level+' TƏSDİQLƏNDİ ✓':'Keçilmədi — lazım olan '+e.pass+'%';
+  v.textContent=e.band?(right+' / '+n+' düz · '+pct+'%'):(ok?e.level+' TƏSDİQLƏNDİ ✓':'Keçilmədi — lazım olan '+e.pass+'%');
   const cert=$('#exCert');cert.hidden=!ok;
-  if(ok)cert.innerHTML=`<div class="eyebrow">Səviyyən</div><b>${esc(e.level)}</b><div class="muted" style="font-size:.85rem">${new Date().toLocaleDateString('az-AZ')} · Zirvə</div>`;
+  if(ok)cert.innerHTML=`<div class="eyebrow">${e.band?'Təxmini band':'Səviyyən'}</div><b>${esc(e.band?$('#exPct').textContent:e.level)}</b><div class="muted" style="font-size:.85rem">${new Date().toLocaleDateString('az-AZ')} · Zirvə</div>`;
   const names={v:'Söz',g:'Qrammatika',r:'Oxu',l:'Dinləmə'};
   $('#exScores').innerHTML=['v','g','r','l'].map(t=>{const p=tot[t]?Math.round(got[t]/tot[t]*100):0;
     return `<div class="sr"><span>${names[t]}</span><div class="t"><i class="${p>=75?'':p>=50?'mid':'low'}" style="width:${p}%"></i></div><span class="num" style="text-align:right">${got[t]}/${tot[t]}</span></div>`;}).join('');
