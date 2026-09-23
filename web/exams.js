@@ -174,6 +174,16 @@ const EXAMS = {
   ["l","What is the company considering?",["Opening a second office","Closing the office","Reducing salaries","Moving abroad"],0]
  ]
 },
-4: { level:"B2", after:0, part:3, pass:75, mins:60, title:"B2 səviyyə imtahanı", intro:"Qrammatika pilləsindən sonra — 60 sual, dörd bölmə.", ready:false },
-5: { level:"IELTS", after:0, part:4, pass:70, mins:90, title:"IELTS sınaq imtahanı", intro:"Tam formatda sınaq: Listening, Reading, Writing, Speaking.", ready:false }
+4: { level:"B1+", after:25, part:2, pass:75, mins:50, title:"B1+ səviyyə imtahanı", ready:false,
+ intro:"Pillə 2-nin ilk yarısı — 4500 sözə qədər. Oxu mətnləri uzanır, dinləmə sürətlənir.",
+ plan:[["Söz","20 sual · 3000–4500 bandı, akademik sözlər"],["Qrammatika","15 sual · perfect zamanlar, passiv, şərt cümlələri 1-2"],["Oxu","8 sual · 350 sözlük mətn, True/False/Not Given"],["Dinləmə","7 sual · dialoq və monoloq, təbii sürət"]] },
+5: { level:"B2", after:50, part:2, pass:75, mins:60, title:"B2 səviyyə imtahanı", ready:false,
+ intro:"Pillə 2-nin sonu — 6000 söz. Oxuda B2 təsdiqi; danışıq və yazı Pillə 3-dən sonra yoxlanır.",
+ plan:[["Söz","25 sual · 4500–6000 bandı, kollokasiyalar və frazeoloji fellər"],["Qrammatika","18 sual · şərt 3, mixed conditionals, inversiya, dolayı nitq"],["Oxu","10 sual · 500 sözlük akademik mətn, başlıq uyğunlaşdırma"],["Dinləmə","7 sual · mühazirə parçası, qeyd tamamlama"]] },
+6: { level:"B2 (tam)", after:12, part:3, pass:75, mins:75, title:"B2 tam imtahanı", ready:false,
+ intro:"Qrammatika pilləsinin sonu — dörd bacarığın hamısı. Bunu keçəndə B2 tam təsdiqlənir.",
+ plan:[["Söz və qrammatika","30 sual · bütün 12 qrammatika mövzusu qarışıq"],["Oxu","12 sual · iki mətn, müqayisəli suallar"],["Dinləmə","10 sual · iki parça, çoxseçimli və cədvəl doldurma"],["Yazı","1 esse · 180 söz, avtomatik quruluş yoxlaması"],["Danışıq","3 mövzu · mikrofonla, tələffüz və axıcılıq faizi"]] },
+7: { level:"IELTS", after:10, part:4, pass:70, mins:165, title:"IELTS tam sınaq imtahanı", ready:false,
+ intro:"Real imtahan formatı və vaxtı. Sonda təxmini band bal (0–9) və hər bölmə üzrə ayrıca qiymət.",
+ plan:[["Listening","40 sual · 30 dəq · 4 hissə, bir dəfə dinlənilir"],["Reading","40 sual · 60 dəq · 3 akademik mətn"],["Writing","2 tapşırıq · 60 dəq · Task 1 qrafik (150 söz), Task 2 esse (250 söz)"],["Speaking","3 hissə · 15 dəq · mikrofonla, cue card daxil"],["Nəticə","Hər bölmə üçün band bal və ümumi bal"]] }
 };

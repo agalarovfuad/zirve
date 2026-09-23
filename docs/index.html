@@ -304,6 +304,8 @@ main section.enter{animation:rise .22s var(--ease)}
 /* imtahan */
 .tile.exam{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border-color:var(--accent);border-width:2px}
 .tile.exam .n{color:var(--accent-soft-ink)}
+.tile.exam.lk{opacity:.8;cursor:pointer}
+.tile.exam.lk:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 .exam-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--accent-soft) 60%,var(--surface)));border:1px solid var(--accent);border-radius:var(--r);padding:20px;margin-bottom:14px}
 .exam-badge{width:62px;height:62px;border-radius:16px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:1.25rem;flex:none}
 .sec-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
@@ -620,7 +622,7 @@ const unitExam=u=>u.k==='e'?EXAMS[u.n]:undefined;
 const hasContent=(p,u)=>u.k==='e'?!!(unitExam(u)&&unitExam(u).items):u.k==='s'?!!unitSpeak(p,u):p.kind==='vocab'?unitWords(p,u).length>0:!!(p.syllabus[u.n-1]&&p.syllabus[u.n-1].ready);
 function unitTitle(p,u){
   if(p.kind==='vocab'){
-    if(u.k==='e'){const a=EXAMS[u.n];return {t:a.level+' imtahanı',s:'dərs 1–'+a.after+' · '+(a.items?a.items.length+' sual · '+a.mins+' dəq':'hazırlanır')};}
+    if(u.k==='e'){const a=EXAMS[u.n];const nq=a.items?a.items.length:(a.plan||[]).reduce((t,x)=>{const m=x[1].match(/^(\d+)/);return t+(m?+m[1]:0);},0);return {t:a.level+' imtahanı',s:'dərs 1–'+a.after+' · '+(a.items?nq+' sual · '+a.mins+' dəq':'baxmaq olar · '+a.mins+' dəq')};}
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
@@ -792,7 +794,7 @@ function renderGrid(){
     const lt=unitTitle(p,u),sc=lastScore(id,u),ok=hasContent(p,u),cur=S.cursor.p===id&&uEq(S.cursor.u,u),unl=unitUnlocked(id,u),done=isDone(id,u);
     const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
     t.innerHTML=`<div class="n">${esc(lt.t)}</div><div class="rg">${esc(lt.s)}</div><div class="sc"><i style="width:${sc??0}%"></i></div>`+(sc!=null?`<span class="badge num">${sc}%</span>`:(unl?'':`<span class="badge lkb">${ICO('i-lock')}</span>`))+(unitText(p,u)?'<span class="txt">📖</span>':'')+(ok?'':'<span class="txt">hazırlanır</span>');
-    t.addEventListener('click',()=>{if(!unl){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
+    t.addEventListener('click',()=>{if(!unl&&u.k!=='e'){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
     frag.appendChild(t);
   });
   g.appendChild(frag);
@@ -828,7 +830,7 @@ $('#wOrder').addEventListener('click',()=>{WT.shuffled=false;$('#wOrder').hidden
 // ---------- unit (lesson / review) ----------
 function openUnit(pid,u,tab){
   const p=P(pid);if(!u)return;
-  if(!unitUnlocked(pid,u)){toast(!partUnlocked(pid)?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}
+  if(!unitUnlocked(pid,u)&&u.k!=='e'){toast(!partUnlocked(pid)?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}
   if(view==='lesson'&&(pid!==curPart||!uEq(u,curU))){plStop();readReset();}
   curPart=pid;curU=u;
   const lt=unitTitle(p,u),unl=unitUnlocked(pid,u),ok=hasContent(p,u),tx=unitText(p,u),done=isDone(pid,u),sc=lastScore(pid,u);
@@ -1165,11 +1167,14 @@ function examSetup(pid,u,unl){
   $('#exIntro').hidden=false;$('#exRun').hidden=true;$('#exEnd').hidden=true;
   const w=$('#exWarn');
   if(!unl){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Kilidlidir — Dərs '+e.after+'-i bitir, imtahan açılacaq.</div>';$('#exStart').disabled=true;}
-  else if(!e.items){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Bu imtahan hazırlanır.</div>';$('#exStart').disabled=true;}
+  else if(!e.items){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Bu imtahan hələ bağlıdır — içində nə olacağını aşağıda görürsən. '+(e.part>1?'Pillə '+e.part:'Bu pillə')+' açılanda hazırlanacaq.</div>';$('#exStart').disabled=true;}
   else{w.hidden=true;$('#exStart').disabled=false;}
+  $('#exStart').textContent=e.items?'İmtahana başla':'Hazır deyil';
   if(e.items){
     const c={v:0,g:0,r:0,l:0};e.items.forEach(i=>c[i[0]]++);
     $('#exParts').innerHTML=`<div>Söz — ${c.v} sual</div><div>Qrammatika — ${c.g} sual</div><div>Oxu — ${c.r} sual (mətn + suallar)</div><div>Dinləmə — ${c.l} sual (səs iki dəfə dinlənilir)</div><div style="margin-top:8px">Cəmi <b>${e.items.length}</b> sual · <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
+  } else if(e.plan){
+    $('#exParts').innerHTML=e.plan.map(([a,b])=>`<div style="margin-bottom:6px"><b>${esc(a)}</b> — ${esc(b)}</div>`).join('')+`<div style="margin-top:8px">Müddət <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
   }
   const prev=(S.exams||{})[EX.id];
   const lb=$('#exLast');
