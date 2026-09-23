@@ -48,6 +48,9 @@ async def main():
     os.makedirs(os.path.join(WEB, "audio", "s"), exist_ok=True)
     for n, t in bt.get("s", {}).items():
         tasks.append(gen(sem, t, os.path.join(WEB, "audio", "s", f"{n}.mp3"), "-8%"))
+    os.makedirs(os.path.join(WEB, "audio", "e"), exist_ok=True)
+    for n, t in bt.get("e", {}).items():
+        tasks.append(gen(sem, t, os.path.join(WEB, "audio", "e", f"{n}.mp3"), "-5%"))
     done = 0
     for coro in asyncio.as_completed(tasks):
         await coro; done += 1

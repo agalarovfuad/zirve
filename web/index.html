@@ -298,6 +298,26 @@ main section.enter{animation:rise .22s var(--ease)}
 .spk-score{font-family:var(--display);font-weight:700;font-size:1.6rem}
 .spk-stats{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
 .spk-stats b{color:var(--ink);font-family:var(--display)}
+/* imtahan */
+.tile.exam{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border-color:var(--accent);border-width:2px}
+.tile.exam .n{color:var(--accent-soft-ink)}
+.exam-head{display:flex;gap:16px;align-items:center;flex-wrap:wrap;background:linear-gradient(135deg,var(--surface),color-mix(in srgb,var(--accent-soft) 60%,var(--surface)));border:1px solid var(--accent);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.exam-badge{width:62px;height:62px;border-radius:16px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:1.25rem;flex:none}
+.sec-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.sec-head .tag{background:var(--accent-soft);color:var(--accent-soft-ink);padding:2px 10px;border-radius:999px;font-size:.76rem;font-weight:700;letter-spacing:.04em}
+.exam-read{font-size:1.06rem;line-height:1.8;max-width:64ch}
+.exam-read p{margin:0 0 .9em}
+.lplay{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.lplay .n{font-family:var(--display);font-weight:700;color:var(--muted)}
+.scoretab{display:grid;gap:8px;margin:10px 0}
+.scoretab .sr{display:grid;grid-template-columns:110px 1fr 62px;gap:10px;align-items:center;font-size:.88rem}
+.scoretab .t{height:9px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.scoretab .t i{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .6s var(--ease)}
+.scoretab .t i.low{background:var(--bad)}.scoretab .t i.mid{background:var(--warm)}
+.verdict{font-family:var(--display);font-weight:700;font-size:1.5rem}
+.verdict.ok{color:var(--good)}.verdict.no{color:var(--bad)}
+.cert{border:2px dashed var(--accent);border-radius:var(--r);padding:18px;display:grid;gap:4px;justify-items:center;background:var(--accent-soft)}
+.cert b{font-family:var(--display);font-size:2.6rem;color:var(--accent-soft-ink);line-height:1}
 /* review tiles, locks, reading cover */
 .tbl.shuf tbody tr{animation:rise .25s var(--ease)}
 .player.locked{opacity:.45;pointer-events:none}
@@ -364,7 +384,7 @@ main section.enter{animation:rise .22s var(--ease)}
         <span class="muted" style="font-size:.82rem">sarı çərçivə = növbəti · ✓ = bitib · 🔒 = hələ açılmayıb</span>
       </div>
       <div class="grid" id="grid"></div>
-      <p class="muted" style="font-size:.84rem;margin-top:14px">Dərs 1–10: 40 söz, 11–20: 50, 21–30: 60, 31–40: 70, 41–50: 80. Test: 1–10 → 50 sual, 11–20 → 70, 21–30 → 90, 31–40 → 110, 41–50 → 130. Hər dərs testdə <b>90%+</b> alanda bitir və növbəti dərs avtomatik açılır. Hər 3 dərsdən bir <b>Təkrar</b> (120 söz, böyük mətn, test), hər 5 dərsdən bir <b>Danışıq</b> (20 dəqiqə mikrofonla).</p>
+      <p class="muted" style="font-size:.84rem;margin-top:14px">Səviyyə imtahanları: Dərs 20 → A2, Dərs 35 → A2+, Dərs 50 → B1. Dərs 1–10: 40 söz, 11–20: 50, 21–30: 60, 31–40: 70, 41–50: 80. Test: 1–10 → 50 sual, 11–20 → 70, 21–30 → 90, 31–40 → 110, 41–50 → 130. Hər dərs testdə <b>90%+</b> alanda bitir və növbəti dərs avtomatik açılır. Hər 3 dərsdən bir <b>Təkrar</b> (120 söz, böyük mətn, test), hər 5 dərsdən bir <b>Danışıq</b> (20 dəqiqə mikrofonla).</p>
     </section>
 
     <section id="v-lesson" hidden>
@@ -382,6 +402,39 @@ main section.enter{animation:rise .22s var(--ease)}
         <button data-t="text" role="tab" id="tabText">Mətn</button>
         <button data-t="test" role="tab" id="tabTest">Test</button>
         <button data-t="speak" role="tab" id="tabSpeak" hidden>Danışıq</button>
+        <button data-t="exam" role="tab" id="tabExam" hidden>İmtahan</button>
+      </div>
+
+      <div id="lt-exam" hidden>
+        <div id="exIntro" class="stack">
+          <div class="exam-head"><div class="exam-badge" id="exBadge">A2</div><div><div class="eyebrow">Səviyyə imtahanı</div><h2 id="exTitle"></h2><div class="muted" style="font-size:.88rem;margin-top:4px" id="exIntroTxt"></div></div></div>
+          <div id="exWarn" class="notice" hidden></div>
+          <div class="card stack">
+            <div class="eyebrow">Bölmələr</div>
+            <div id="exParts" class="muted" style="font-size:.9rem"></div>
+            <div class="row"><button class="btn primary" id="exStart">İmtahana başla</button><span class="muted" style="font-size:.84rem">Başladıqdan sonra dayandırmaq olmur.</span></div>
+          </div>
+          <div id="exLast" class="card" hidden></div>
+        </div>
+        <div id="exRun" hidden>
+          <div class="test-head"><div class="muted num" id="exPos"></div><div class="timer num" id="exTimer"></div></div>
+          <div class="prog"><i id="exBar" style="width:0%"></i></div>
+          <div class="card qcard" id="exCard">
+            <div class="sec-head"><span class="tag" id="exTag"></span><span class="muted" style="font-size:.85rem" id="exSecNote"></span></div>
+            <div id="exMedia"></div>
+            <div class="prompt" id="exPrompt" style="font-size:1.35rem"></div>
+            <div class="opts" id="exOpts"></div>
+          </div>
+        </div>
+        <div id="exEnd" class="card result" hidden>
+          <div class="eyebrow" id="exEndEyebrow"></div>
+          <div class="big num" id="exPct">0%</div>
+          <div class="verdict" id="exVerdict"></div>
+          <div id="exCert" class="cert" hidden></div>
+          <div class="scoretab" id="exScores" style="width:100%;max-width:460px"></div>
+          <div id="exAdvice" class="muted" style="max-width:56ch"></div>
+          <div class="row" style="justify-content:center"><button class="btn primary" id="exAgain">Yenidən</button><button class="btn" id="exNext">Növbəti →</button><button class="btn ghost" id="exHome">Dərslər</button></div>
+        </div>
       </div>
 
       <div id="lt-speak" hidden>
@@ -512,6 +565,7 @@ main section.enter{animation:rise .22s var(--ease)}
 <script src="syllabus.js"></script>
 <script src="speak.js"></script>
 <script src="lemma.js"></script>
+<script src="exams.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -526,6 +580,7 @@ const ICO=id=>`<svg><use href="#${id}"/></svg>`;
 const NATIVE=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.native;
 const HAS_AUDIO=!!NATIVE||(location.protocol==='https:'&&!location.hostname.endsWith('claude.ai'))||location.hostname==='localhost';
 const PASS=90, PER=40, REV_EVERY=3, SPK_EVERY=5, SPK_PASS=70;
+const EXAMS_BY=(()=>{const m={};for(const k in EXAMS){const e=EXAMS[k];if(e.after)m[e.part+'-'+e.after]=+k;}return m;})();
 const SPEAKS=(typeof SPEAK!=='undefined')?SPEAK:{};
 const slug=w=>w.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
 
@@ -548,17 +603,19 @@ function bounds(p){ // hər dərsin [start,end) aralığı
 }
 const lessonCount=p=>p.kind==='vocab'?bounds(p).length:p.syllabus.length;
 function rangeOf(p,a,b){const B=bounds(p);return [B[a-1][0],B[Math.min(b,B.length)-1][1]];}
-function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});}return out;}
+function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});const ex=EXAMS_BY[p.id+'-'+n];if(ex)out.push({k:'e',n:ex});}return out;}
 const ukey=(pid,u)=>pid+'-'+(u.k==='l'?'':u.k)+u.n;
 const uEq=(a,b)=>a&&b&&a.k===b.k&&a.n===b.n;
 const uIndex=(p,u)=>units(p).findIndex(x=>uEq(x,u));
-function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
+function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];if(u.k==='e'){const a=EXAMS[u.n];return [1,a.after];}return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
 const unitWords=(p,u)=>{const [a,b]=unitLessons(u);const [x,y]=rangeOf(p,a,b);return p.words.slice(x,y);};
 const unitText=(p,u)=>u.k==='l'?(p.texts||{})[u.n]:u.k==='r'?(p.reviews||{})[u.n]:undefined;
 const unitSpeak=(p,u)=>(u.k==='s'&&p.id===1)?SPEAKS[u.n]:undefined;
-const hasContent=(p,u)=>u.k==='s'?!!unitSpeak(p,u):p.kind==='vocab'?unitWords(p,u).length>0:!!(p.syllabus[u.n-1]&&p.syllabus[u.n-1].ready);
+const unitExam=u=>u.k==='e'?EXAMS[u.n]:undefined;
+const hasContent=(p,u)=>u.k==='e'?!!(unitExam(u)&&unitExam(u).items):u.k==='s'?!!unitSpeak(p,u):p.kind==='vocab'?unitWords(p,u).length>0:!!(p.syllabus[u.n-1]&&p.syllabus[u.n-1].ready);
 function unitTitle(p,u){
   if(p.kind==='vocab'){
+    if(u.k==='e'){const a=EXAMS[u.n];return {t:a.level+' imtahanı',s:'dərs 1–'+a.after+' · '+(a.items?a.items.length+' sual · '+a.mins+' dəq':'hazırlanır')};}
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
@@ -642,7 +699,7 @@ $('#plRate').addEventListener('change',()=>{if(PL.audio)PL.audio.playbackRate=Nu
 $('#plTrk').addEventListener('click',e=>{if(PL.mode==='file'&&PL.audio&&PL.audio.duration){const r=e.currentTarget.getBoundingClientRect();PL.audio.currentTime=(e.clientX-r.left)/r.width*PL.audio.duration;}});
 
 // ---------- state ----------
-let S={cursor:{p:1,u:{k:'l',n:1}},done:[],scores:{},reading:{},readLock:{},hard:{},history:[],sound:true,theme:'system'};
+let S={cursor:{p:1,u:{k:'l',n:1}},done:[],scores:{},reading:{},readLock:{},exams:{},hard:{},history:[],sound:true,theme:'system'};
 let db=null, saveChain=Promise.resolve();
 const LS='zirve-progress';
 function migrate(s){
@@ -652,6 +709,7 @@ function migrate(s){
   if(s.scores){const o={};Object.keys(s.scores).forEach(k=>{o[/^\d+$/.test(k)?'1-'+k:k]=s.scores[k];});s.scores=o;}
   if(!s.reading)s.reading={};
   if(!s.readLock)s.readLock={};
+  if(!s.exams)s.exams={};
   return s;
 }
 function lsGet(){try{const v=localStorage.getItem(LS)||localStorage.getItem('soz3000-progress');return v?JSON.parse(v):null}catch(e){return null}}
@@ -702,10 +760,10 @@ function lastScore(pid,u){const a=S.scores[ukey(pid,u)];return a&&a.length?a[a.l
 function renderToday(){
   const {p,u}=S.cursor,PP=P(p),lt=unitTitle(PP,u),sc=lastScore(p,u),ok=hasContent(PP,u),tx=unitText(PP,u);
   $('#today').innerHTML=`<div><div class="eyebrow">Bu gün · ${esc(PP.name)}</div><h2>${esc(lt.t)}</h2><div class="meta"><span>${esc(lt.s)}</span>${sc!=null?`<span>son test <b class="num">${sc}%</b></span>`:''}${tx?'<span>📖 mətn var</span>':''}<span>${S.done.length} / ${totalUnits()} bitib</span></div></div>
-  <div class="acts"><button class="btn" id="tdWords">${PP.kind==='vocab'?'Sözlər':'Mövzu'}</button>${tx?'<button class="btn" id="tdText">📖 Mətn</button>':''}<button class="btn primary" id="tdTest" ${ok?'':'disabled'}>${u.k==='s'?'Danışığa başla':'Testə başla'}</button></div>`;
-  $('#tdWords').addEventListener('click',()=>openUnit(p,u,'words'));
+  <div class="acts">${u.k==='e'?'':`<button class="btn" id="tdWords">${PP.kind==='vocab'?'Sözlər':'Mövzu'}</button>`}${tx?'<button class="btn" id="tdText">📖 Mətn</button>':''}<button class="btn primary" id="tdTest" ${ok?'':'disabled'}>${u.k==='s'?'Danışığa başla':u.k==='e'?'İmtahana başla':'Testə başla'}</button></div>`;
+  if($('#tdWords'))$('#tdWords').addEventListener('click',()=>openUnit(p,u,'words'));
   const tt=$('#tdText');if(tt)tt.addEventListener('click',()=>openUnit(p,u,'text'));
-  $('#tdTest').addEventListener('click',()=>openUnit(p,u,u.k==='s'?'speak':'test'));
+  $('#tdTest').addEventListener('click',()=>openUnit(p,u,u.k==='s'?'speak':u.k==='e'?'exam':'test'));
 }
 function renderTabs(){
   const box=$('#ptabs');box.innerHTML='';
@@ -727,7 +785,7 @@ function renderGrid(){
   const g=$('#grid');g.innerHTML='';const frag=document.createDocumentFragment();
   units(p).forEach(u=>{
     const lt=unitTitle(p,u),sc=lastScore(id,u),ok=hasContent(p,u),cur=S.cursor.p===id&&uEq(S.cursor.u,u),unl=unitUnlocked(id,u),done=isDone(id,u);
-    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
+    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
     t.innerHTML=`<div class="n">${esc(lt.t)}</div><div class="rg">${esc(lt.s)}</div><div class="sc"><i style="width:${sc??0}%"></i></div>`+(sc!=null?`<span class="badge num">${sc}%</span>`:(unl?'':`<span class="badge lkb">${ICO('i-lock')}</span>`))+(unitText(p,u)?'<span class="txt">📖</span>':'')+(ok?'':'<span class="txt">hazırlanır</span>');
     t.addEventListener('click',()=>{if(!unl){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
     frag.appendChild(t);
@@ -781,6 +839,10 @@ function openUnit(pid,u,tab){
   $('#tabSpeak').hidden=u.k!=='s';$('#tabSpeak').disabled=!spk||!unl;
   $('#lGoTest').hidden=u.k==='s';
   if(u.k==='s'){spkSetup(pid,u,spk,unl);}
+  const isEx=u.k==='e';
+  $('#tabExam').hidden=!isEx;$('#tabExam').disabled=!isEx;
+  $('#tabWords').hidden=isEx;$('#tabTest').hidden=$('#tabTest').hidden||isEx;
+  if(isEx)examSetup(pid,u,unl);
   // words
   $('#lSoon').hidden=true;$('#wtools').hidden=!(p.kind==='vocab'&&(ok||u.k==='s'));
   if(p.kind==='vocab'&&(ok||u.k==='s')){
@@ -800,15 +862,16 @@ function openUnit(pid,u,tab){
   const ts=$('#testSoon');ts.hidden=ok&&unl;
   ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`:'Bu dərsin testi hazırlanır.')+'</div>';
   $('#sndTog').classList.toggle('on',S.sound!==false);
-  setTab(u.k==='s'&&(tab==='words'||!tab)?'speak':(tab||'words'));
+  setTab(u.k==='e'?'exam':u.k==='s'&&(tab==='words'||!tab)?'speak':(tab||'words'));
   show('lesson');
 }
 function setTab(t){
   curTab=t;
   document.querySelectorAll('.ltabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t?'true':'false'));
-  ['words','text','test','speak'].forEach(x=>$('#lt-'+x).hidden=x!==t);
+  ['words','text','test','speak','exam'].forEach(x=>$('#lt-'+x).hidden=x!==t);
   if(t!=='text')plStop();
   if(t!=='speak')spkStopAll();
+  if(t!=='exam')examStop();
 }
 document.querySelector('.ltabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&!b.disabled)setTab(b.dataset.t);});
 $('#lPrev').addEventListener('click',()=>{const x=prevUnit(curPart,curU);if(x)openUnit(x.p,x.u,curTab);});
@@ -1086,11 +1149,119 @@ $('#spkAgain').addEventListener('click',spkStart);
 $('#spkEndNext').addEventListener('click',()=>{const nx=nextUnit(SK.pid,SK.u);if(nx)openUnit(nx.p,nx.u,'words');});
 $('#spkHome').addEventListener('click',()=>openPart(SK.pid));
 
+
+// ---------- səviyyə imtahanı ----------
+const SEC={v:['SÖZ','Azərbaycanca verilən sözün ingiliscəsini seç'],g:['QRAMMATİKA','Boşluğa uyğun variantı seç'],r:['OXU','Yuxarıdakı mətnə görə cavabla'],l:['DİNLƏMƏ','Səsi dinlə və cavabla']};
+const EX={id:0,e:null,q:[],i:0,ans:[],left:0,tick:null,audio:null,pid:1,u:null};
+function examSetup(pid,u,unl){
+  examStop();
+  const e=unitExam(u);EX.id=u.n;EX.e=e;EX.pid=pid;EX.u=u;
+  $('#exBadge').textContent=e.level;$('#exTitle').textContent=e.title;$('#exIntroTxt').textContent=e.intro;
+  $('#exIntro').hidden=false;$('#exRun').hidden=true;$('#exEnd').hidden=true;
+  const w=$('#exWarn');
+  if(!unl){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Kilidlidir — Dərs '+e.after+'-i bitir, imtahan açılacaq.</div>';$('#exStart').disabled=true;}
+  else if(!e.items){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Bu imtahan hazırlanır.</div>';$('#exStart').disabled=true;}
+  else{w.hidden=true;$('#exStart').disabled=false;}
+  if(e.items){
+    const c={v:0,g:0,r:0,l:0};e.items.forEach(i=>c[i[0]]++);
+    $('#exParts').innerHTML=`<div>Söz — ${c.v} sual</div><div>Qrammatika — ${c.g} sual</div><div>Oxu — ${c.r} sual (mətn + suallar)</div><div>Dinləmə — ${c.l} sual (səs iki dəfə dinlənilir)</div><div style="margin-top:8px">Cəmi <b>${e.items.length}</b> sual · <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
+  }
+  const prev=(S.exams||{})[EX.id];
+  const lb=$('#exLast');
+  if(prev){lb.hidden=false;lb.innerHTML=`<div class="eyebrow" style="margin-bottom:6px">Əvvəlki nəticə</div><div class="row" style="justify-content:space-between"><span>${new Date(prev.at).toLocaleDateString('az-AZ')}</span><b class="num" style="color:${prev.pct>=e.pass?'var(--good)':'var(--bad)'}">${prev.pct}% · ${prev.pct>=e.pass?e.level+' təsdiqləndi':'keçilmədi'}</b></div>`;}
+  else lb.hidden=true;
+}
+function examStart(){
+  const e=EX.e;
+  const byType=t=>e.items.map((it,idx)=>({it,idx})).filter(x=>x.it[0]===t);
+  EX.q=[];['v','g','r','l'].forEach(t=>byType(t).forEach(x=>{
+    const opts=x.it[2].map((o,i)=>({o,ok:i===x.it[3]}));
+    EX.q.push({t,q:x.it[1],opts:shuffle(opts),li:EX.q.filter(y=>y.t==='l').length+1});
+  }));
+  EX.i=0;EX.ans=[];EX.left=e.mins*60;
+  $('#exIntro').hidden=true;$('#exEnd').hidden=true;$('#exRun').hidden=false;
+  clearInterval(EX.tick);EX.tick=setInterval(()=>{EX.left--;examTimer();if(EX.left<=0)examEnd();},1000);
+  examTimer();examDraw();
+}
+function examTimer(){const t=$('#exTimer');t.textContent=fmt(EX.left);t.classList.toggle('low',EX.left<180);}
+function examStop(){clearInterval(EX.tick);if(EX.audio){EX.audio.pause();EX.audio=null;}if('speechSynthesis' in window)speechSynthesis.cancel();}
+function playExAudio(src,text,btn){
+  if(EX.audio){EX.audio.pause();EX.audio=null;}
+  if(HAS_AUDIO&&src){const a=new Audio(src);EX.audio=a;a.play().catch(()=>ttsSay(text,.9));}
+  else ttsSay(text,.9);
+  if(btn){btn.classList.add('playing');setTimeout(()=>btn.classList.remove('playing'),1200);}
+}
+function examDraw(){
+  const q=EX.q[EX.i],e=EX.e,n=EX.q.length;
+  $('#exPos').textContent=`${EX.i+1} / ${n}`;$('#exBar').style.width=(EX.i/n*100)+'%';
+  $('#exTag').textContent=SEC[q.t][0];$('#exSecNote').textContent=SEC[q.t][1];
+  const card=$('#exCard');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
+  const m=$('#exMedia');m.innerHTML='';
+  if(q.t==='r'&&EX.q.filter(x=>x.t==='r')[0]===q||q.t==='r'){
+    const box=el('div','card');box.style.background='var(--surface-2)';box.style.marginBottom='6px';
+    box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><b class="num">${esc(e.reading.title)}</b></div><div class="exam-read">${e.reading.text.split(/\n\n+/).map(x=>'<p>'+esc(x)+'</p>').join('')}</div>`;
+    const pb=el('button','btn sm','🔊 Dinlə');pb.addEventListener('click',()=>playExAudio('audio/e/'+EX.id+'-r.mp3',e.reading.text,pb));
+    box.querySelector('.row').appendChild(pb);m.appendChild(box);
+  }
+  if(q.t==='l'){
+    const box=el('div','lplay');
+    const b=el('button','btn','▶ Səsi dinlə');const txt=e.listening[q.li-1];
+    b.addEventListener('click',()=>playExAudio('audio/e/'+EX.id+'-l'+q.li+'.mp3',txt,b));
+    box.append(el('span','n','Səs '+q.li),b,el('span','muted','iki dəfə dinləyə bilərsən'));
+    m.appendChild(box);
+    if(!EX.ans[EX.i])setTimeout(()=>b.click(),350);
+  }
+  $('#exPrompt').textContent=q.q;
+  const o=$('#exOpts');o.innerHTML='';
+  q.opts.forEach((op,k)=>{
+    const b=el('button','opt');b.innerHTML=`<kbd>${k+1}</kbd><span>${esc(op.o)}</span>`;
+    b.addEventListener('click',()=>examAnswer(k));o.appendChild(b);
+  });
+}
+function examAnswer(k){
+  const q=EX.q[EX.i];
+  EX.ans[EX.i]={t:q.t,ok:q.opts[k].ok};
+  EX.i++;
+  if(EX.i>=EX.q.length)examEnd();else examDraw();
+}
+function examEnd(){
+  examStop();
+  const e=EX.e,n=EX.q.length;
+  const got={v:0,g:0,r:0,l:0},tot={v:0,g:0,r:0,l:0};
+  EX.q.forEach((q,i)=>{tot[q.t]++;if(EX.ans[i]&&EX.ans[i].ok)got[q.t]++;});
+  const right=Object.values(got).reduce((a,b)=>a+b,0);
+  const pct=Math.round(right/n*100);const ok=pct>=e.pass;
+  S.exams=S.exams||{};S.exams[EX.id]={pct,at:new Date().toISOString(),level:e.level,passed:ok,sec:{got,tot}};
+  S.history.unshift({l:e.level+' imtahanı',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);
+  if(ok)markDone(EX.pid,EX.u);else save();
+  updateRing();
+  $('#exRun').hidden=true;$('#exEnd').hidden=false;
+  $('#exEndEyebrow').textContent=e.title+' · '+right+' / '+n+' düz';
+  const big=$('#exPct');big.className='big num '+(ok?'':pct>=e.pass-15?'mid':'low');countUp(big,pct);
+  const v=$('#exVerdict');v.className='verdict '+(ok?'ok':'no');
+  v.textContent=ok?e.level+' TƏSDİQLƏNDİ ✓':'Keçilmədi — lazım olan '+e.pass+'%';
+  const cert=$('#exCert');cert.hidden=!ok;
+  if(ok)cert.innerHTML=`<div class="eyebrow">Səviyyən</div><b>${esc(e.level)}</b><div class="muted" style="font-size:.85rem">${new Date().toLocaleDateString('az-AZ')} · Zirvə</div>`;
+  const names={v:'Söz',g:'Qrammatika',r:'Oxu',l:'Dinləmə'};
+  $('#exScores').innerHTML=['v','g','r','l'].map(t=>{const p=tot[t]?Math.round(got[t]/tot[t]*100):0;
+    return `<div class="sr"><span>${names[t]}</span><div class="t"><i class="${p>=75?'':p>=50?'mid':'low'}" style="width:${p}%"></i></div><span class="num" style="text-align:right">${got[t]}/${tot[t]}</span></div>`;}).join('');
+  const weak=['v','g','r','l'].filter(t=>tot[t]&&got[t]/tot[t]<0.7).map(t=>names[t]);
+  $('#exAdvice').innerHTML=ok
+    ? `Rəsmi təsdiq üçün <b>EF SET</b> pulsuz imtahanını da ver (50 dəq, CEFR sertifikatı): <a href="https://www.efset.org/ef-set-50/" target="_blank" rel="noopener" style="color:var(--accent-soft-ink)">efset.org</a>`
+    : (weak.length?`Zəif bölmə: <b>${weak.join(', ')}</b>. Həmin hissəni təkrar et və yenidən cəhd et.`:'Bir az da təkrar et və yenidən cəhd et.');
+  const nx=nextUnit(EX.pid,EX.u);$('#exNext').hidden=!(nx&&ok);
+}
+$('#exStart').addEventListener('click',examStart);
+$('#exAgain').addEventListener('click',()=>{examSetup(EX.pid,EX.u,true);});
+$('#exNext').addEventListener('click',()=>{const nx=nextUnit(EX.pid,EX.u);if(nx)openUnit(nx.p,nx.u,'words');});
+$('#exHome').addEventListener('click',()=>openPart(EX.pid));
+
 // ---------- keyboard ----------
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#q').focus();return;}
   if(e.target.matches('input,select,textarea'))return;
   if(view==='lesson'&&curTab==='test'&&T&&!$('#testRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)answer(k-1);return;}
+  if(view==='lesson'&&curTab==='exam'&&!$('#exRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)examAnswer(k-1);return;}
   if(view==='lesson'&&curTab==='speak'&&!$('#spkRun').hidden){if(e.key===' '){e.preventDefault();SK.listening?spkAbortListen():spkListen();return;}if(e.key.toLowerCase()==='p'){spkPlay();return;}if(e.key==='ArrowRight'){SK.i++;spkShow(true);return;}}
   if(view==='lesson'){
     if(e.key==='ArrowLeft'){const x=prevUnit(curPart,curU);if(x)openUnit(x.p,x.u,curTab);}
@@ -1136,6 +1307,7 @@ function renderProgress(){
     [vocabDone.toLocaleString('az')+' söz','öyrənilib'],
     [avg+'%','orta test nəticəsi'],
     [ravg!=null?ravg+'%':'—','orta mətn anlama'],
+    [(()=>{const ex=Object.values(S.exams||{}).filter(x=>x.passed);return ex.length?ex[ex.length-1].level:'—';})(),'təsdiqlənmiş səviyyə'],
     [Object.keys(S.hard).length,'çətin söz'],
     [spkDone,'danışıq sessiyası'],
     [unitTitle(P(cu.p),cu.u).t,'növbəti · '+P(cu.p).name]

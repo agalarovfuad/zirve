@@ -1,7 +1,7 @@
 // Zirvə — oflayn keş. Əsas fayllar quraşdırılanda keşlənir; səslər ilk dəfə çalınanda keşə düşür
 // və ya "Səsləri oflayn yüklə" ilə hamısı bir dəfəyə yüklənir.
-const VER = 'zirve-v2';
-const CORE = ['./', 'index.html', 'words.js', 'texts.js', 'syllabus.js', 'speak.js', 'lemma.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+const VER = 'zirve-v3';
+const CORE = ['./', 'index.html', 'words.js', 'texts.js', 'syllabus.js', 'speak.js', 'lemma.js', 'exams.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VER).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VER && k !== 'zirve-audio').map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
