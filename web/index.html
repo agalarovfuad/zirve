@@ -716,18 +716,34 @@ function migrate(s){
 }
 function lsGet(){try{const v=localStorage.getItem(LS)||localStorage.getItem('soz3000-progress');return v?JSON.parse(v):null}catch(e){return null}}
 function lsSet(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
+// ən təzə vəziyyəti seç (reload köhnə nüsxəni yeni irəliləyişin üstünə yazmasın)
+function stamp(s){
+  if(!s)return 0;if(s.savedAt)return Date.parse(s.savedAt)||0;
+  let t=0;const f=x=>{const v=Date.parse(x);if(v>t)t=v;};
+  (s.history||[]).forEach(h=>f(h&&h.at));
+  Object.values(s.scores||{}).forEach(a=>(a||[]).forEach(x=>f(x&&x.at)));
+  Object.values(s.reading||{}).forEach(x=>f(x&&x.at));
+  return t;
+}
+function newest(a,b){
+  if(!a)return b;if(!b)return a;
+  const ta=stamp(a),tb=stamp(b);if(ta!==tb)return ta>tb?a:b;
+  return (b.done||[]).length>(a.done||[]).length?b:a;
+}
 function save(){
+  S.savedAt=new Date().toISOString();
   lsSet();
   if(NATIVE){try{NATIVE.postMessage(JSON.stringify(S))}catch(e){}}
   if(db){saveChain=saveChain.then(()=>db.doc('progress/main').set(S)).catch(()=>{});}
 }
 async function load(){
-  const local=window.__NATIVE_STATE__||lsGet();
+  const nat=window.__NATIVE_STATE__||null,local=newest(nat,lsGet());
   if(local)S={...S,...migrate(local)};
   applyTheme();render();
-  if(NATIVE)return;
+  if(NATIVE){if(local&&local!==nat)save();return;}
   try{db=await (window.claude&&window.claude.use?window.claude.use('db'):null);}catch(e){db=null}
-  if(db){try{const snap=await db.doc('progress/main').get();if(snap.exists){S={...S,...migrate(snap.data())};lsSet();applyTheme();render();}else if(local){save();}}catch(e){}}
+  if(db){try{const snap=await db.doc('progress/main').get();const remote=snap.exists?snap.data():null;
+    if(remote&&newest(remote,local)===remote){S={...S,...migrate(remote)};lsSet();applyTheme();render();}else if(local){save();}}catch(e){}}
 }
 
 // ---------- theme / header ----------

@@ -27,10 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     func applicationDidFinishLaunching(_ note: Notification) {
         let cfg = WKWebViewConfiguration()
         let ucc = WKUserContentController()
-        if let data = try? Data(contentsOf: stateURL), let json = String(data: data, encoding: .utf8), !json.isEmpty {
-            ucc.addUserScript(WKUserScript(source: "window.__NATIVE_STATE__=\(json);", injectionTime: .atDocumentStart, forMainFrameOnly: true))
-        }
-        ucc.addUserScript(WKUserScript(source: "window.__NATIVE_SPEECH__=true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        installScripts(ucc, state: (try? Data(contentsOf: stateURL)).flatMap { String(data: $0, encoding: .utf8) })
         ucc.add(self, name: "native")
         cfg.userContentController = ucc
         cfg.preferences.setValue(true, forKey: "developerExtrasEnabled")
@@ -56,10 +53,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    // Səhifə yenidən yüklənəndə (reload) açılış anındakı köhnə yox, son saxlanmış vəziyyət verilsin
+    func installScripts(_ ucc: WKUserContentController, state: String?) {
+        ucc.removeAllUserScripts()
+        if let json = state, !json.isEmpty {
+            ucc.addUserScript(WKUserScript(source: "window.__NATIVE_STATE__=\(json);", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
+        ucc.addUserScript(WKUserScript(source: "window.__NATIVE_SPEECH__=true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
+    }
+
     func userContentController(_ ucc: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "native" else { return }
         if let s = message.body as? String {
             try? s.data(using: .utf8)?.write(to: stateURL, options: .atomic)
+            installScripts(ucc, state: s)
             // gündəlik ehtiyat nüsxə (son 14 gün)
             let dir = stateURL.deletingLastPathComponent().appendingPathComponent("backups", isDirectory: true)
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
