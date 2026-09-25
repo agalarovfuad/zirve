@@ -30,3 +30,8 @@ GitHub Pages, `docs/` qovluğundan (repo: github.com/agalarovfuad/zirve). Yenil�
 ./build-web.sh && git add -A && git commit -m "yeniləmə" && git push
 ```
 Telefonda: Safari → Paylaş → "Ana Ekrana Ekle". İrəliləyiş → "Səsləri oflayn yüklə" (44 MB) — sonra internetsiz.
+
+## Oxunuş (transkripsiya)
+`oxunus.py` — CMU Pronouncing Dictionary (`cmudict.dict`, amerikan tələffüzü, səslə eyni) əsasında
+bütün sözlərin azərbaycan hərfləri ilə oxunuşunu yaradır. Vurğulu heca BÖYÜK hərflə, heteronimlərdə
+iki variant ("liv / layv"). Siyahı dəyişəndə: `python3 oxunus.py web/words.js` → `ox-result.json`.
