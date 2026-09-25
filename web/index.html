@@ -298,6 +298,11 @@ main section.enter{animation:rise .22s var(--ease)}
 .spk-score{font-family:var(--display);font-weight:700;font-size:1.6rem}
 .spk-stats{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
 .spk-stats b{color:var(--ink);font-family:var(--display)}
+.tbl .les{color:var(--muted);font-size:.78rem;white-space:nowrap}
+.tbl .cnt{font-size:.75rem;font-weight:700;color:var(--bad);background:var(--bad-soft);padding:1px 7px;border-radius:999px}
+.tbl td.hid{color:transparent;background:var(--surface-2);border-radius:6px;cursor:pointer}
+.tbl td.hid:hover{color:var(--muted)}
+.tbl tr.playing{background:var(--accent-soft)}
 /* imtahan */
 .tile.exam{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border-color:var(--accent);border-width:2px}
 .tile.exam .n{color:var(--accent-soft-ink)}
@@ -545,10 +550,23 @@ main section.enter{animation:rise .22s var(--ease)}
 
     <section id="v-hard" hidden>
       <div class="row" style="justify-content:space-between;margin-bottom:12px">
-        <div><div class="eyebrow">Təkrar üçün</div><h2>Çətin sözlər</h2></div>
+        <div><div class="eyebrow">Təkrar üçün</div><h2>Çətin sözlər <span class="muted num" id="hardTotal" style="font-weight:400;font-size:1rem"></span></h2></div>
         <button class="btn primary" id="hardTest">Bunlarla test</button>
       </div>
-      <div id="hardList" class="stack"></div>
+      <div class="row" id="hardTools" style="margin-bottom:12px">
+        <select id="hardLesson" style="padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit"></select>
+        <select id="hardSort" style="padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit">
+          <option value="lesson">Dərs sırası ilə</option>
+          <option value="mistakes">Ən çox səhv edilən</option>
+          <option value="alpha">Əlifba sırası</option>
+          <option value="random">Qarışıq</option>
+        </select>
+        <label class="toggle" id="hardHide"><i></i>Mənaları gizlət</label>
+        <button class="btn sm" id="hardPlayAll">▶ Hamısını oxu</button>
+        <button class="btn sm ghost" id="hardCopy">Siyahını kopyala</button>
+      </div>
+      <div class="card" style="padding:6px 8px"><div class="tblwrap"><table class="tbl" id="hardTbl"></table></div></div>
+      <div id="hardEmpty" class="empty" hidden></div>
     </section>
 
     <section id="v-progress" hidden>
@@ -750,7 +768,7 @@ function show(v){
   document.querySelectorAll('#nav button').forEach(b=>{const m=(v==='part'||v==='lesson')?'home':v;if(b.dataset.v===m)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   window.scrollTo({top:0});
 }
-function go(v){if(v==='home')renderHome();if(v==='hard')renderHard();if(v==='progress')renderProgress();show(v);}
+function go(v){HD.playing=false;if(v==='home')renderHome();if(v==='hard')renderHard();if(v==='progress')renderProgress();show(v);}
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.v);});
 $('#brand').addEventListener('click',()=>go('home'));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
@@ -1280,28 +1298,69 @@ document.addEventListener('keydown',e=>{
 });
 
 // ---------- hard ----------
+let HD={sort:'lesson',hide:false,lesson:'all',playing:false};
+function hardWords(){return W.concat(W2).filter(w=>S.hard[w[1]]);}
 function renderHard(){
-  const L=$('#hardList');L.innerHTML='';
-  const entries=W.concat(W2).filter(w=>S.hard[w[1]]);
-  $('#hardTest').disabled=entries.length<4;
-  if(!entries.length){L.innerHTML='<div class="empty">Hələ çətin söz yoxdur. Testdə səhv etdiyin sözlər və ★ ilə işarələdiklərin bura düşəcək.</div>';return;}
-  const groups={};
-  entries.forEach(w=>{const l=lessonOfWord(w);const g=l.p+'-'+Math.ceil(l.n/REV_EVERY);(groups[g]=groups[g]||[]).push(w);});
-  Object.keys(groups).sort((a,b)=>{const[x1,x2]=a.split('-').map(Number),[y1,y2]=b.split('-').map(Number);return x1-y1||x2-y2;}).forEach(g=>{
-    const [p,gg]=g.split('-').map(Number);const a=(gg-1)*REV_EVERY+1,b=Math.min(gg*REV_EVERY,lessonCount(P(p)));
-    const box=el('div','card');
-    box.appendChild(el('h3',null,`${esc(P(p).name)} · Dərs ${a}–${b} <span class="muted" style="font-weight:400;font-size:.85rem">· ${groups[g].length} söz</span>`));
-    const ch=el('div','chips');ch.style.marginTop='10px';
-    groups[g].sort((x,y)=>(S.hard[y[1]].n||0)-(S.hard[x[1]].n||0)).forEach(w=>{
-      const c=el('div','chip');const n=S.hard[w[1]].n||0;
-      c.innerHTML=`<b>${esc(w[1])}</b><span>${esc(w[3])}${n>1?' · '+n+'×':''}</span>`;
-      c.querySelector('b').addEventListener('click',()=>sayWord(w));
-      const x=el('button',null,'✓');x.title='Öyrəndim — siyahıdan çıxar';x.addEventListener('click',()=>{delete S.hard[w[1]];save();updateRing();renderHard();});
-      c.appendChild(x);ch.appendChild(c);
-    });
-    box.appendChild(ch);L.appendChild(box);
+  const all=hardWords();
+  $('#hardTotal').textContent=all.length?'· '+all.length+' söz':'';
+  $('#hardTest').disabled=all.length<4;
+  $('#hardTools').hidden=!all.length;
+  $('#hardEmpty').hidden=!!all.length;
+  if(!all.length){$('#hardTbl').innerHTML='';$('#hardEmpty').innerHTML='Hələ çətin söz yoxdur. Testdə səhv etdiyin sözlər və ★ ilə işarələdiklərin bura düşəcək.';return;}
+  // dərs seçimi
+  const byLesson={};all.forEach(w=>{const l=lessonOfWord(w);const k=l.p+'-'+l.n;(byLesson[k]=byLesson[k]||[]).push(w);});
+  const keys=Object.keys(byLesson).sort((a,b)=>{const[x1,x2]=a.split('-').map(Number),[y1,y2]=b.split('-').map(Number);return x1-y1||x2-y2;});
+  const sel=$('#hardLesson');const cur=HD.lesson;
+  sel.innerHTML='<option value="all">Bütün dərslər ('+all.length+')</option>'+keys.map(k=>{const[p,n]=k.split('-');return `<option value="${k}">P${p} · Dərs ${n} (${byLesson[k].length})</option>`;}).join('');
+  sel.value=keys.includes(cur)?cur:'all';HD.lesson=sel.value;
+  let list=HD.lesson==='all'?all.slice():byLesson[HD.lesson].slice();
+  if(HD.sort==='mistakes')list.sort((a,b)=>(S.hard[b[1]].n||0)-(S.hard[a[1]].n||0)||a[0]-b[0]);
+  else if(HD.sort==='alpha')list.sort((a,b)=>a[1].localeCompare(b[1]));
+  else if(HD.sort==='random')list=shuffle(list);
+  else list.sort((a,b)=>a[0]-b[0]);
+  const hasIpa=list.some(w=>w[4]);
+  const t=$('#hardTbl');
+  t.innerHTML=`<thead><tr><th>#</th><th>Word</th>${hasIpa?'<th>Oxunuş</th>':''}<th>Məna</th><th>Dərs</th><th>Səhv</th><th></th></tr></thead>`;
+  const tb=el('tbody');
+  list.forEach((w,i)=>{
+    const l=lessonOfWord(w),n=S.hard[w[1]].n||0;
+    const tr=el('tr');tr.dataset.w=w[1];
+    tr.innerHTML=`<td class="rk num">${i+1}</td><td class="w">${esc(w[1])}</td>${hasIpa?`<td class="ipa">${esc(w[4]||'')}</td>`:''}<td class="mn${HD.hide?' hid':''}">${esc(w[3])}</td><td class="les">P${l.p} · D${l.n}</td><td>${n>1?`<span class="cnt">${n}×</span>`:''}</td><td class="ac"></td>`;
+    const sp=el('button','mini',ICO('i-spk'));sp.title='Səsləndir';sp.addEventListener('click',()=>{sayWord(w);sp.classList.add('playing');setTimeout(()=>sp.classList.remove('playing'),900);});
+    const x=el('button','mini','✓');x.title='Öyrəndim — siyahıdan çıxar';
+    x.addEventListener('click',()=>{delete S.hard[w[1]];save();updateRing();renderHard();});
+    tr.lastElementChild.append(sp,x);
+    tr.querySelector('.w').addEventListener('click',()=>sayWord(w));
+    const mn=tr.querySelector('.mn');mn.addEventListener('click',()=>mn.classList.toggle('hid'));
+    tb.appendChild(tr);
   });
+  t.appendChild(tb);
 }
+$('#hardLesson').addEventListener('change',e=>{HD.lesson=e.target.value;renderHard();});
+$('#hardSort').addEventListener('change',e=>{HD.sort=e.target.value;renderHard();});
+$('#hardHide').addEventListener('click',()=>{HD.hide=!HD.hide;$('#hardHide').classList.toggle('on',HD.hide);renderHard();});
+$('#hardCopy').addEventListener('click',()=>{
+  const rows=[...$('#hardTbl').querySelectorAll('tbody tr')].map(tr=>{const c=tr.children;return c[1].textContent+' — '+c[HD_MN()].textContent;});
+  const txt=rows.join('\n');
+  navigator.clipboard?navigator.clipboard.writeText(txt).then(()=>toast(rows.length+' söz kopyalandı')).catch(()=>toast('Kopyalanmadı')):toast('Kopyalanmadı');
+});
+function HD_MN(){return $('#hardTbl').querySelector('thead th:nth-child(3)')&&$('#hardTbl').querySelector('thead th:nth-child(3)').textContent==='Oxunuş'?3:2;}
+$('#hardPlayAll').addEventListener('click',async()=>{
+  const btn=$('#hardPlayAll');
+  if(HD.playing){HD.playing=false;btn.textContent='▶ Hamısını oxu';return;}
+  HD.playing=true;btn.textContent='■ Dayandır';
+  const rows=[...$('#hardTbl').querySelectorAll('tbody tr')];
+  for(const tr of rows){
+    if(!HD.playing)break;
+    const w=(W.concat(W2)).find(x=>x[1]===tr.dataset.w);if(!w)continue;
+    rows.forEach(r=>r.classList.remove('playing'));tr.classList.add('playing');
+    tr.scrollIntoView({block:'center',behavior:'smooth'});
+    sayWord(w);
+    await new Promise(r=>setTimeout(r,1400));
+  }
+  rows.forEach(r=>r.classList.remove('playing'));
+  HD.playing=false;btn.textContent='▶ Hamısını oxu';
+});
 
 // ---------- progress ----------
 function renderProgress(){
