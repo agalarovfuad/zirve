@@ -954,7 +954,8 @@ function renderText(p,u,T){
     RD.total++;
     const d=el('div','q mcq');d.innerHTML=`<span class="mq">${esc(qs)}</span>`;
     const box=el('div','mco');
-    opts.forEach((o,i)=>{const b=el('button','btn sm',esc(o));b.addEventListener('click',()=>{d.className='q mcq '+(i===ci?'ok':'no');[...box.children].forEach((x,j)=>{x.disabled=true;if(j===ci)x.classList.add('primary');});readAnswered(i===ci);});box.appendChild(b);});
+    const order=shuffle(opts.map((o,i)=>i));
+    order.forEach(i=>{const o=opts[i];const b=el('button','btn sm',esc(o));b.dataset.i=i;b.addEventListener('click',()=>{d.className='q mcq '+(i===ci?'ok':'no');[...box.children].forEach(x=>{x.disabled=true;if(+x.dataset.i===ci)x.classList.add('primary');});readAnswered(i===ci);});box.appendChild(b);});
     d.appendChild(box);q.appendChild(d);
   });
   const rs=S.reading[RD.key];
@@ -1176,6 +1177,8 @@ $('#spkHome').addEventListener('click',()=>openPart(SK.pid));
 
 
 // ---------- səviyyə imtahanı ----------
+const exReadings=e=>e.readings||(e.reading?[e.reading]:[]);
+const exAudioR=(id,i)=>'audio/e/'+id+'-r'+(i?i+1:'')+'.mp3';
 const SEC={v:['SÖZ','Azərbaycanca verilən sözün ingiliscəsini seç'],g:['QRAMMATİKA','Boşluğa uyğun variantı seç'],r:['OXU','Yuxarıdakı mətnə görə cavabla'],l:['DİNLƏMƏ','Səsi dinlə və cavabla']};
 const EX={id:0,e:null,q:[],i:0,ans:[],left:0,tick:null,audio:null,pid:1,u:null};
 function examSetup(pid,u,unl){
@@ -1190,7 +1193,7 @@ function examSetup(pid,u,unl){
   $('#exStart').textContent=e.items?'İmtahana başla':'Hazır deyil';
   if(e.items){
     const c={v:0,g:0,r:0,l:0};e.items.forEach(i=>c[i[0]]++);
-    $('#exParts').innerHTML=`<div>Söz — ${c.v} sual</div><div>Qrammatika — ${c.g} sual</div><div>Oxu — ${c.r} sual (mətn + suallar)</div><div>Dinləmə — ${c.l} sual (səs iki dəfə dinlənilir)</div><div style="margin-top:8px">Cəmi <b>${e.items.length}</b> sual · <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
+    $('#exParts').innerHTML=`<div>Söz — ${c.v} sual</div><div>Qrammatika — ${c.g} sual</div><div>Oxu — ${c.r} sual (${exReadings(e).length} mətn)</div><div>Dinləmə — ${c.l} sual (səs iki dəfə dinlənilir)</div><div style="margin-top:8px">Cəmi <b>${e.items.length}</b> sual · <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
   } else if(e.plan){
     $('#exParts').innerHTML=e.plan.map(([a,b])=>`<div style="margin-bottom:6px"><b>${esc(a)}</b> — ${esc(b)}</div>`).join('')+`<div style="margin-top:8px">Müddət <b>${e.mins}</b> dəqiqə · keçid <b>${e.pass}%</b></div>`;
   }
@@ -1202,9 +1205,9 @@ function examSetup(pid,u,unl){
 function examStart(){
   const e=EX.e;
   const byType=t=>e.items.map((it,idx)=>({it,idx})).filter(x=>x.it[0]===t);
-  EX.q=[];['v','g','r','l'].forEach(t=>byType(t).forEach(x=>{
+  EX.q=[];['v','g','r','l'].forEach(t=>byType(t).slice().sort((a,b)=>t==='r'?((a.it[4]||0)-(b.it[4]||0)):0).forEach(x=>{
     const opts=x.it[2].map((o,i)=>({o,ok:i===x.it[3]}));
-    EX.q.push({t,q:x.it[1],opts:shuffle(opts),li:EX.q.filter(y=>y.t==='l').length+1});
+    EX.q.push({t,q:x.it[1],opts:shuffle(opts),li:EX.q.filter(y=>y.t==='l').length+1,ri:x.it[4]||0});
   }));
   EX.i=0;EX.ans=[];EX.left=e.mins*60;
   $('#exIntro').hidden=true;$('#exEnd').hidden=true;$('#exRun').hidden=false;
@@ -1225,10 +1228,11 @@ function examDraw(){
   $('#exTag').textContent=SEC[q.t][0];$('#exSecNote').textContent=SEC[q.t][1];
   const card=$('#exCard');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
   const m=$('#exMedia');m.innerHTML='';
-  if(q.t==='r'&&EX.q.filter(x=>x.t==='r')[0]===q||q.t==='r'){
+  if(q.t==='r'){
+    const R=exReadings(e)[q.ri]||exReadings(e)[0];const nR=exReadings(e).length;
     const box=el('div','card');box.style.background='var(--surface-2)';box.style.marginBottom='6px';
-    box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><b class="num">${esc(e.reading.title)}</b></div><div class="exam-read">${e.reading.text.split(/\n\n+/).map(x=>'<p>'+esc(x)+'</p>').join('')}</div>`;
-    const pb=el('button','btn sm','🔊 Dinlə');pb.addEventListener('click',()=>playExAudio('audio/e/'+EX.id+'-r.mp3',e.reading.text,pb));
+    box.innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:8px"><b>${nR>1?'Mətn '+(q.ri+1)+' · ':''}${esc(R.title)}</b></div><div class="exam-read">${R.text.split(/\n\n+/).map(x=>'<p>'+esc(x)+'</p>').join('')}</div>`;
+    const pb=el('button','btn sm','🔊 Dinlə');pb.addEventListener('click',()=>playExAudio(exAudioR(EX.id,q.ri),R.text,pb));
     box.querySelector('.row').appendChild(pb);m.appendChild(box);
   }
   if(q.t==='l'){
