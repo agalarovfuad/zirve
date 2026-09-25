@@ -10,6 +10,9 @@ root=sys.argv[1]
 s=io.open(root+"/web/index.html",encoding="utf-8").read().replace('<meta charset="utf-8">\n','',1)
 head,body=s.split('<div class="top">',1)
 out='<!doctype html>\n<html lang="az">\n<head>\n<meta charset="utf-8">\n'+head+'</head>\n<body>\n<div class="top">'+body+'\n</body>\n</html>\n'
+import time,re
+v=str(int(time.time()))
+out=re.sub(r'<script src="([a-z0-9_]+\.js)"></script>',lambda m:'<script src="'+m.group(1)+'?v='+v+'"></script>',out)
 io.open(root+"/docs/index.html","w",encoding="utf-8").write(out)
 PY
 touch "$ROOT/docs/.nojekyll"

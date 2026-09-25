@@ -585,12 +585,12 @@ main section.enter{animation:rise .22s var(--ease)}
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js"></script>
-<script src="texts.js"></script>
-<script src="syllabus.js"></script>
-<script src="speak.js"></script>
-<script src="lemma.js"></script>
-<script src="exams.js"></script>
+<script src="words.js?v=1790304833"></script>
+<script src="texts.js?v=1790304833"></script>
+<script src="syllabus.js?v=1790304833"></script>
+<script src="speak.js?v=1790304833"></script>
+<script src="lemma.js?v=1790304833"></script>
+<script src="exams.js?v=1790304833"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -639,8 +639,8 @@ const unitSpeak=(p,u)=>(u.k==='s'&&p.id===1)?SPEAKS[u.n]:undefined;
 const unitExam=u=>u.k==='e'?EXAMS[u.n]:undefined;
 const hasContent=(p,u)=>u.k==='e'?!!(unitExam(u)&&unitExam(u).items):u.k==='s'?!!unitSpeak(p,u):p.kind==='vocab'?unitWords(p,u).length>0:!!(p.syllabus[u.n-1]&&p.syllabus[u.n-1].ready);
 function unitTitle(p,u){
+  if(u.k==='e'){const a=EXAMS[u.n];const nq=a.items?a.items.length:(a.plan||[]).reduce((t,x)=>{const m=x[1].match(/^(\d+)/);return t+(m?+m[1]:0);},0);return {t:a.level+' imtahanı',s:(p.kind==='vocab'?'dərs 1–'+a.after:'pillənin sonu')+' · '+(a.items?nq+' sual · '+a.mins+' dəq':'baxmaq olar · '+a.mins+' dəq')};}
   if(p.kind==='vocab'){
-    if(u.k==='e'){const a=EXAMS[u.n];const nq=a.items?a.items.length:(a.plan||[]).reduce((t,x)=>{const m=x[1].match(/^(\d+)/);return t+(m?+m[1]:0);},0);return {t:a.level+' imtahanı',s:'dərs 1–'+a.after+' · '+(a.items?nq+' sual · '+a.mins+' dəq':'baxmaq olar · '+a.mins+' dəq')};}
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
