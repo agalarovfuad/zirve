@@ -303,6 +303,11 @@ main section.enter{animation:rise .22s var(--ease)}
 .tbl td.hid{color:transparent;background:var(--surface-2);border-radius:6px;cursor:pointer}
 .tbl td.hid:hover{color:var(--muted)}
 .tbl tr.playing{background:var(--accent-soft)}
+.srs-card{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--warm);border-radius:var(--r);padding:14px 18px;margin-bottom:12px}
+.srs-card.done{border-left-color:var(--good)}
+.srs-card b{font-family:var(--display);font-size:1.05rem}
+.srs-card .lv{display:flex;gap:10px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:4px}
+.srs-card .lv span b{font-size:.85rem;color:var(--ink)}
 /* imtahan */
 .tile.exam{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border-color:var(--accent);border-width:2px}
 .tile.exam .n{color:var(--accent-soft-ink)}
@@ -384,6 +389,7 @@ main section.enter{animation:rise .22s var(--ease)}
   <main>
     <section id="v-home">
       <div class="ptabs" id="ptabs"></div>
+      <div class="srs-card" id="srsCard"></div>
       <div class="today" id="today"></div>
       <div id="pNotice" class="notice" hidden style="margin-bottom:12px"></div>
       <div class="row" style="justify-content:space-between;margin-bottom:10px">
@@ -545,6 +551,25 @@ main section.enter{animation:rise .22s var(--ease)}
           </div>
         </div>
         <div id="testSoon" class="notice" hidden></div>
+      </div>
+    </section>
+
+    <section id="v-srs" hidden>
+      <div class="crumbs"><button data-go="home">Dərslər</button><span>›</span><span>Gündəlik təkrar</span></div>
+      <div id="srsRun">
+        <div class="test-head"><div class="muted num" id="srsPos">1 / 1</div><div class="muted" style="font-size:.85rem" id="srsInfo"></div></div>
+        <div class="prog"><i id="srsBar" style="width:0%"></i></div>
+        <div class="card qcard" id="srsQ">
+          <div class="prompt" id="srsPrompt"></div>
+          <div class="opts" id="srsOpts"></div>
+        </div>
+      </div>
+      <div id="srsEnd" class="card result" hidden>
+        <div class="eyebrow">Gündəlik təkrar</div>
+        <div class="big num" id="srsPct">0%</div>
+        <div id="srsMsg" class="muted"></div>
+        <div class="wrongs" id="srsWrong"></div>
+        <div class="row" style="justify-content:center"><button class="btn primary" id="srsMore">Davam et</button><button class="btn ghost" id="srsHome">Dərslər</button></div>
       </div>
     </section>
 
@@ -719,7 +744,7 @@ $('#plRate').addEventListener('change',()=>{if(PL.audio)PL.audio.playbackRate=Nu
 $('#plTrk').addEventListener('click',e=>{if(PL.mode==='file'&&PL.audio&&PL.audio.duration){const r=e.currentTarget.getBoundingClientRect();PL.audio.currentTime=(e.clientX-r.left)/r.width*PL.audio.duration;}});
 
 // ---------- state ----------
-let S={cursor:{p:1,u:{k:'l',n:1}},done:[],scores:{},reading:{},readLock:{},exams:{},hard:{},history:[],sound:true,theme:'system'};
+let S={cursor:{p:1,u:{k:'l',n:1}},done:[],scores:{},reading:{},readLock:{},exams:{},srs:{},hard:{},history:[],sound:true,theme:'system'};
 let db=null, saveChain=Promise.resolve();
 const LS='zirve-progress';
 function migrate(s){
@@ -730,6 +755,7 @@ function migrate(s){
   if(!s.reading)s.reading={};
   if(!s.readLock)s.readLock={};
   if(!s.exams)s.exams={};
+  if(!s.srs)s.srs={};
   return s;
 }
 function lsGet(){try{const v=localStorage.getItem(LS)||localStorage.getItem('soz3000-progress');return v?JSON.parse(v):null}catch(e){return null}}
@@ -765,7 +791,7 @@ function show(v){
   view=v;
   document.querySelectorAll('main section').forEach(s=>{s.hidden=true;s.classList.remove('enter');});
   const sec=$('#v-'+v);sec.hidden=false;void sec.offsetWidth;sec.classList.add('enter');
-  document.querySelectorAll('#nav button').forEach(b=>{const m=(v==='part'||v==='lesson')?'home':v;if(b.dataset.v===m)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
+  document.querySelectorAll('#nav button').forEach(b=>{const m=(v==='part'||v==='lesson'||v==='srs')?'home':v;if(b.dataset.v===m)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   window.scrollTo({top:0});
 }
 function go(v){HD.playing=false;if(v==='home')renderHome();if(v==='hard')renderHard();if(v==='progress')renderProgress();show(v);}
@@ -812,7 +838,7 @@ function renderGrid(){
   });
   g.appendChild(frag);
 }
-function renderHome(){if(selPart==null)selPart=S.cursor.p;renderTabs();renderToday();renderGrid();}
+function renderHome(){if(selPart==null)selPart=S.cursor.p;renderTabs();renderSrsCard();renderToday();renderGrid();}
 function openPart(id){selPart=id;renderHome();if(view!=='home')show('home');else window.scrollTo({top:0,behavior:'smooth'});}
 
 // ---------- söz cədvəli (qarışdırma ilə) ----------
@@ -900,6 +926,7 @@ $('#lGoTest').addEventListener('click',()=>setTab('test'));
 $('#lGoText').addEventListener('click',()=>setTab('text'));
 function markDone(pid,u){
   const k=ukey(pid,u);if(!S.done.includes(k))S.done.push(k);
+  if(u.k==='l')srsAddLesson(pid,u.n,1);
   if(S.cursor.p===pid&&uIndex(P(pid),S.cursor.u)<=uIndex(P(pid),u)){
     const nx=nextUnit(pid,u);
     if(nx){if(nx.p!==pid){if(partDone(pid)){S.cursor=nx;selPart=nx.p;toast(P(nx.p).name+' açıldı 🔓');}}else{S.cursor=nx;}}
@@ -1286,11 +1313,87 @@ $('#exAgain').addEventListener('click',()=>{examSetup(EX.pid,EX.u,true);});
 $('#exNext').addEventListener('click',()=>{const nx=nextUnit(EX.pid,EX.u);if(nx)openUnit(nx.p,nx.u,'words');});
 $('#exHome').addEventListener('click',()=>openPart(EX.pid));
 
+
+// ---------- gündəlik təkrar (aralıqlı təkrar, SM-2 sadə) ----------
+const SRS_SESSION=40;
+const dayStr=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
+const today=()=>dayStr(Date.now());
+const addDays=(n)=>dayStr(Date.now()+n*864e5);
+const allW=()=>W.concat(W2);
+function srsAddLesson(pid,n,dueOffset){
+  const p=P(pid);if(p.kind!=='vocab')return 0;
+  const [x,y]=rangeOf(p,n,n);let added=0;
+  p.words.slice(x,y).forEach((w,j)=>{if(!S.srs[w[1]]){S.srs[w[1]]={iv:0,reps:0,lapses:0,ef:2.5,due:addDays(dueOffset!=null?dueOffset:1)};added++;}});
+  return added;
+}
+function srsBackfill(){
+  // artıq bitmiş, amma təkrar sisteminə düşməmiş dərslər — sözləri gələn günlərə yay (gündə ~60)
+  let queue=[];
+  S.done.forEach(k=>{const m=k.match(/^([12])-(\d+)$/);if(!m)return;const p=P(+m[1]);const [x,y]=rangeOf(p,+m[2],+m[2]);p.words.slice(x,y).forEach(w=>{if(!S.srs[w[1]])queue.push(w);});});
+  queue.forEach((w,j)=>{S.srs[w[1]]={iv:0,reps:0,lapses:0,ef:2.5,due:addDays(Math.floor(j/60))};});
+  if(queue.length)save();
+}
+function srsDue(){const t=today();return allW().filter(w=>S.srs[w[1]]&&S.srs[w[1]].due<=t);}
+function srsLevels(){const c={yeni:0,oyrenilir:0,mohkem:0,ezber:0};Object.values(S.srs).forEach(x=>{if(x.reps===0)c.yeni++;else if(x.iv<7)c.oyrenilir++;else if(x.iv<30)c.mohkem++;else c.ezber++;});return c;}
+function srsGrade(w,ok){
+  const x=S.srs[w[1]]||{iv:0,reps:0,lapses:0,ef:2.5};
+  if(ok){x.reps++;x.iv=x.reps===1?1:x.reps===2?3:Math.round(x.iv*x.ef);x.ef=Math.min(2.8,x.ef+0.05);}
+  else{x.lapses++;x.reps=0;x.iv=0;x.ef=Math.max(1.3,x.ef-0.2);const l=lessonOfWord(w);const h=S.hard[w[1]]||{p:l.p,l:l.n,n:0};h.n=(h.n||0)+1;S.hard[w[1]]=h;}
+  x.due=addDays(ok?Math.max(1,x.iv):1);
+  S.srs[w[1]]=x;
+}
+function renderSrsCard(){
+  const box=$('#srsCard');const total=Object.keys(S.srs).length;
+  if(!total){box.hidden=true;return;}box.hidden=false;
+  const due=srsDue().length,lv=srsLevels();
+  box.className='srs-card'+(due?'':' done');
+  box.innerHTML=`<div><b>${due?'Gündəlik təkrar · '+due+' söz vaxtı çatıb':'Bu günün təkrarı bitib ✓'}</b><div class="lv"><span>yeni <b class="num">${lv.yeni}</b></span><span>öyrənilir <b class="num">${lv.oyrenilir}</b></span><span>möhkəm <b class="num">${lv.mohkem}</b></span><span>əzbər <b class="num">${lv.ezber}</b></span></div></div>${due?`<button class="btn primary" id="srsGo">Təkrara başla${due>SRS_SESSION?' ('+SRS_SESSION+')':''}</button>`:''}`;
+  const g=$('#srsGo');if(g)g.addEventListener('click',srsStart);
+}
+const SR={q:[],i:0,right:0,wrong:[],lock:false};
+function srsStart(){
+  const due=shuffle(srsDue()).slice(0,SRS_SESSION);
+  if(!due.length){toast('Bu gün təkrar yoxdur');return;}
+  const pool=allW().filter(w=>S.srs[w[1]]);const pl=pool.length>=40?pool:W.slice(0,200);
+  SR.q=due.map(w=>buildQ(w,pl));SR.i=0;SR.right=0;SR.wrong=[];
+  $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
+}
+function srsDraw(){
+  const q=SR.q[SR.i],n=SR.q.length,x=S.srs[q.w[1]];
+  $('#srsPos').textContent=`${SR.i+1} / ${n}`;$('#srsBar').style.width=(SR.i/n*100)+'%';
+  $('#srsInfo').textContent=x&&x.reps?'son aralıq: '+x.iv+' gün':'ilk təkrar';
+  const card=$('#srsQ');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
+  $('#srsPrompt').innerHTML=`<span>${esc(q.w[3])}</span><small>İngiliscəsi hansıdır?</small>`;
+  const o=$('#srsOpts');o.innerHTML='';SR.lock=false;
+  q.opts.forEach((w,k)=>{const b=el('button','opt');b.innerHTML=`<kbd>${k+1}</kbd><span>${esc(w[1])}</span>`;b.addEventListener('click',()=>srsAnswer(k));o.appendChild(b);});
+}
+function srsAnswer(k){
+  if(SR.lock)return;SR.lock=true;
+  const q=SR.q[SR.i],ok=q.opts[k][1]===q.w[1];
+  [...$('#srsOpts').children].forEach((b,i)=>{b.disabled=true;if(q.opts[i][1]===q.w[1]){b.classList.add('ok');if(q.w[4])b.querySelector('span').insertAdjacentHTML('beforeend',' <em class="ipa" style="font-style:normal;color:var(--accent-soft-ink);font-size:.85rem">'+esc(q.w[4])+'</em>');}else if(i===k&&!ok)b.classList.add('no');});
+  srsGrade(q.w,ok);if(ok)SR.right++;else SR.wrong.push(q.w);
+  if(S.sound!==false)sayWord(q.w);
+  setTimeout(()=>{SR.i++;if(SR.i>=SR.q.length)srsEnd();else srsDraw();},ok?550:1300);
+}
+function srsEnd(){
+  save();updateRing();
+  const n=SR.q.length,pct=Math.round(SR.right/n*100),left=srsDue().length;
+  $('#srsRun').hidden=true;$('#srsEnd').hidden=false;
+  const big=$('#srsPct');big.className='big num '+(pct>=85?'':pct>=65?'mid':'low');countUp(big,pct);
+  $('#srsMsg').textContent=`${SR.right} / ${n} düz. Səhvlər sabah yenidən çıxacaq və Çətin sözlərə düşdü.`+(left?` Bu gün hələ ${left} söz qalıb.`:' Bu günün təkrarı bitdi ✓');
+  $('#srsWrong').innerHTML='';SR.wrong.forEach(w=>{const sp=el('span',null,`${esc(w[1])} — ${esc(w[3])}`);sp.addEventListener('click',()=>sayWord(w));$('#srsWrong').appendChild(sp);});
+  $('#srsMore').hidden=!left;
+  S.history.unshift({l:'Gündəlik təkrar',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);save();
+}
+$('#srsMore').addEventListener('click',srsStart);
+$('#srsHome').addEventListener('click',()=>go('home'));
+
 // ---------- keyboard ----------
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#q').focus();return;}
   if(e.target.matches('input,select,textarea'))return;
   if(view==='lesson'&&curTab==='test'&&T&&!$('#testRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)answer(k-1);return;}
+  if(view==='srs'&&!$('#srsRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)srsAnswer(k-1);return;}
   if(view==='lesson'&&curTab==='exam'&&!$('#exRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)examAnswer(k-1);return;}
   if(view==='lesson'&&curTab==='speak'&&!$('#spkRun').hidden){if(e.key===' '){e.preventDefault();SK.listening?spkAbortListen():spkListen();return;}if(e.key.toLowerCase()==='p'){spkPlay();return;}if(e.key==='ArrowRight'){SK.i++;spkShow(true);return;}}
   if(view==='lesson'){
@@ -1379,6 +1482,7 @@ function renderProgress(){
     [avg+'%','orta test nəticəsi'],
     [ravg!=null?ravg+'%':'—','orta mətn anlama'],
     [(()=>{const ex=Object.values(S.exams||{}).filter(x=>x.passed);return ex.length?ex[ex.length-1].level:'—';})(),'təsdiqlənmiş səviyyə'],
+    [Object.keys(S.srs).length?srsLevels().ezber+srsLevels().mohkem:'—','möhkəm yadda qalan söz'],
     [Object.keys(S.hard).length,'çətin söz'],
     [spkDone,'danışıq sessiyası'],
     [unitTitle(P(cu.p),cu.u).t,'növbəti · '+P(cu.p).name]
@@ -1419,7 +1523,7 @@ if('serviceWorker' in navigator&&!NATIVE&&(location.protocol==='https:'||locatio
 }
 
 // ---------- boot ----------
-function render(){updateRing();renderHome();if(view==='home')show('home');}
+function render(){srsBackfill();updateRing();renderHome();if(view==='home')show('home');}
 function start(hot){load();if(hot&&hot.T&&hot.T.qs&&hot.T.i<hot.T.qs.length&&hot.T.u){T=hot.T;openUnit(T.p,T.u,'test');runTest();}}
 const hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(()=>({T:(T&&!$('#testRun').hidden)?T:null}));
