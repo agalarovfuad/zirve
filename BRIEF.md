@@ -21,6 +21,7 @@ Cəmi düz 3000 söz = 50 dərs.
 - `l` — Dərs (sözlər + mətn + test)
 - `r` — **Təkrar**, hər 3 dərsdən bir (o 3 dərsin bütün sözləri + böyük mətn + test)
 - `s` — **Danışıq**, hər 5 dərsdən bir (20 dəq, mikrofonla şadoinq)
+- `b` — **Ümumi təkrar**, hər 10 dərsdən bir (o 10 dərsin sözləri, 60 bal, 40 dəq, keçid 80%). 6 növ: tanıma (AZ→EN seç), tərs tanıma (EN→AZ), yadda saxlama (AZ verilir, EN yaz), diktant (dinlə, yaz), cümlədə boşluq (TEXTS/REVIEWS/SPEAK cümlələrindən avtomatik), uyğunlaşdırma (5↔5). Ayrıca məzmun faylı tələb etmir — mətnlərdən özü qurulur.
 - `e` — **Səviyyə imtahanı**: P1 Dərs 20 → A2, Dərs 35 → A2+, Dərs 50 → B1;
   P2 Dərs 25 → B1+, Dərs 50 → B2; P3 sonu → B2 tam; P4 sonu → IELTS sınaq
 

@@ -311,6 +311,21 @@ main section.enter{animation:rise .22s var(--ease)}
 .srs-card b{font-family:var(--display);font-size:1.05rem}
 .srs-card .lv{display:flex;gap:10px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:4px}
 .srs-card .lv span b{font-size:.85rem;color:var(--ink)}
+.tile.big{background:linear-gradient(135deg,color-mix(in srgb,var(--warm) 20%,var(--surface)),var(--surface));border-color:var(--warm);border-width:2px}
+.tile.big .n{color:var(--warm-ink)}
+.bq-type{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:999px;background:var(--warm-soft);color:var(--warm-ink);margin-bottom:6px}
+.bq-in{width:100%;font:inherit;font-size:1.3rem;padding:14px 16px;border-radius:var(--r-sm);border:2px solid var(--line);background:var(--surface);color:var(--ink);font-family:var(--display)}
+.bq-in:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.bq-in.ok{border-color:var(--good);background:var(--good-soft)}
+.bq-in.no{border-color:var(--bad);background:var(--bad-soft)}
+.bq-fb{min-height:1.4em;font-size:.95rem}
+.bq-sent{font-size:1.15rem;line-height:1.7;font-family:var(--body);font-weight:500}
+.bq-sent .gap{display:inline-block;min-width:90px;border-bottom:2px solid var(--accent);color:var(--accent-soft-ink);font-weight:700;text-align:center}
+.bq-match{display:grid;gap:8px}
+.bq-match .mr{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
+.bq-match select{font:inherit;padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.bq-match select.ok{border-color:var(--good);background:var(--good-soft)}
+.bq-match select.no{border-color:var(--bad);background:var(--bad-soft)}
 /* imtahan */
 .tile.exam{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--surface)),var(--surface));border-color:var(--accent);border-width:2px}
 .tile.exam .n{color:var(--accent-soft-ink)}
@@ -402,7 +417,7 @@ main section.enter{animation:rise .22s var(--ease)}
         <span class="muted" style="font-size:.82rem">sarı çərçivə = növbəti · ✓ = bitib · 🔒 = hələ açılmayıb</span>
       </div>
       <div class="grid" id="grid"></div>
-      <p class="muted" style="font-size:.84rem;margin-top:14px">Səviyyə imtahanları: Dərs 20 → A2, Dərs 35 → A2+, Dərs 50 → B1. Dərs 1–10: 40 söz, 11–20: 50, 21–30: 60, 31–40: 70, 41–50: 80. Test: 1–10 → 50 sual, 11–20 → 70, 21–30 → 90, 31–40 → 110, 41–50 → 130. Hər dərs testdə <b>90%+</b> alanda bitir və növbəti dərs avtomatik açılır. Hər 3 dərsdən bir <b>Təkrar</b> (120 söz, böyük mətn, test), hər 5 dərsdən bir <b>Danışıq</b> (20 dəqiqə mikrofonla).</p>
+      <p class="muted" style="font-size:.84rem;margin-top:14px">Səviyyə imtahanları: Dərs 20 → A2, Dərs 35 → A2+, Dərs 50 → B1. Dərs 1–10: 40 söz, 11–20: 50, 21–30: 60, 31–40: 70, 41–50: 80. Test: 1–10 → 50 sual, 11–20 → 70, 21–30 → 90, 31–40 → 110, 41–50 → 130. Hər dərs testdə <b>90%+</b> alanda bitir və növbəti dərs avtomatik açılır. Hər 3 dərsdən bir <b>Təkrar</b>, hər 5 dərsdən bir <b>Danışıq</b>, hər 10 dərsdən bir <b>Ümumi təkrar</b> (6 sual növü, yazmalı suallarla).</p>
     </section>
 
     <section id="v-lesson" hidden>
@@ -421,6 +436,40 @@ main section.enter{animation:rise .22s var(--ease)}
         <button data-t="test" role="tab" id="tabTest">Test</button>
         <button data-t="speak" role="tab" id="tabSpeak" hidden>Danışıq</button>
         <button data-t="exam" role="tab" id="tabExam" hidden>İmtahan</button>
+        <button data-t="big" role="tab" id="tabBig" hidden>Ümumi təkrar</button>
+      </div>
+
+      <div id="lt-big" hidden>
+        <div id="bgIntro" class="stack">
+          <div class="exam-head" style="border-color:var(--warm)"><div class="exam-badge" style="background:var(--warm);color:#2A1D05" id="bgBadge">1–10</div><div><div class="eyebrow">Ümumi təkrar</div><h2 id="bgTitle"></h2><div class="muted" style="font-size:.88rem;margin-top:4px" id="bgSub"></div></div></div>
+          <div id="bgWarn" class="notice" hidden></div>
+          <div class="card stack">
+            <div class="eyebrow">6 sual növü · 60 bal · 40 dəqiqə · keçid 80%</div>
+            <div class="muted" style="font-size:.9rem;display:grid;gap:4px">
+              <div><b>Tanıma</b> — azərbaycanca verilir, ingiliscəsini seç (12)</div>
+              <div><b>Tərs tanıma</b> — ingiliscə verilir, mənasını seç (8)</div>
+              <div><b>Yadda saxlama</b> — mənası verilir, sözü özün yaz (12)</div>
+              <div><b>Diktant</b> — səsi dinlə, sözü yaz (8)</div>
+              <div><b>Cümlədə boşluq</b> — mətnlərdən cümlə, çatışmayan sözü yaz (10)</div>
+              <div><b>Uyğunlaşdırma</b> — 5 söz ↔ 5 məna, iki blok (10)</div>
+            </div>
+            <div class="row"><button class="btn primary" id="bgStart">Başla</button><span class="muted" style="font-size:.84rem">Yazanda kiçik bir hərf səhvi bağışlanır.</span></div>
+          </div>
+        </div>
+        <div id="bgRun" hidden>
+          <div class="test-head"><div class="muted num" id="bgPos"></div><div class="timer num" id="bgTimer"></div></div>
+          <div class="prog"><i id="bgBar" style="width:0%"></i></div>
+          <div class="card qcard" id="bgCard"><div id="bgBody"></div></div>
+          <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn sm ghost" id="bgQuit">Dayandır</button></div>
+        </div>
+        <div id="bgEnd" class="card result" hidden>
+          <div class="eyebrow" id="bgEndEyebrow"></div>
+          <div class="big num" id="bgPct">0%</div>
+          <div class="verdict" id="bgVerdict"></div>
+          <div class="scoretab" id="bgScores" style="width:100%;max-width:460px"></div>
+          <div class="wrongs" id="bgWrong"></div>
+          <div class="row" style="justify-content:center"><button class="btn primary" id="bgAgain">Yenidən</button><button class="btn" id="bgNext">Növbəti →</button><button class="btn ghost" id="bgHome">Dərslər</button></div>
+        </div>
       </div>
 
       <div id="lt-exam" hidden>
@@ -610,12 +659,12 @@ main section.enter{animation:rise .22s var(--ease)}
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1790615379"></script>
-<script src="texts.js?v=1790615379"></script>
-<script src="syllabus.js?v=1790615379"></script>
-<script src="speak.js?v=1790615379"></script>
-<script src="lemma.js?v=1790615379"></script>
-<script src="exams.js?v=1790615379"></script>
+<script src="words.js?v=1790616124"></script>
+<script src="texts.js?v=1790616124"></script>
+<script src="syllabus.js?v=1790616124"></script>
+<script src="speak.js?v=1790616124"></script>
+<script src="lemma.js?v=1790616124"></script>
+<script src="exams.js?v=1790616124"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -629,7 +678,7 @@ const pickWrap=(a,n)=>{if(!a.length)return [];let out=[];while(out.length<n)out=
 const ICO=id=>`<svg><use href="#${id}"/></svg>`;
 const NATIVE=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.native;
 const HAS_AUDIO=!!NATIVE||(location.protocol==='https:'&&!location.hostname.endsWith('claude.ai'))||location.hostname==='localhost';
-const PASS=90, PER=40, REV_EVERY=3, SPK_EVERY=5, SPK_PASS=70;
+const PASS=90, PER=40, REV_EVERY=3, SPK_EVERY=5, SPK_PASS=70, BIG_EVERY=10, BIG_PASS=80;
 const EXAMS_BY=(()=>{const m={};for(const k in EXAMS){const e=EXAMS[k];if(e.after)m[e.part+'-'+e.after]=+k;}return m;})();
 const SPEAKS=(typeof SPEAK!=='undefined')?SPEAK:{};
 const slug=w=>w.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
@@ -653,11 +702,11 @@ function bounds(p){ // hər dərsin [start,end) aralığı
 }
 const lessonCount=p=>p.kind==='vocab'?bounds(p).length:p.syllabus.length;
 function rangeOf(p,a,b){const B=bounds(p);return [B[a-1][0],B[Math.min(b,B.length)-1][1]];}
-function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});const ex=EXAMS_BY[p.id+'-'+n];if(ex)out.push({k:'e',n:ex});}return out;}
+function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});if(p.kind==='vocab'&&n%BIG_EVERY===0)out.push({k:'b',n:n/BIG_EVERY});const ex=EXAMS_BY[p.id+'-'+n];if(ex)out.push({k:'e',n:ex});}return out;}
 const ukey=(pid,u)=>pid+'-'+(u.k==='l'?'':u.k)+u.n;
 const uEq=(a,b)=>a&&b&&a.k===b.k&&a.n===b.n;
 const uIndex=(p,u)=>units(p).findIndex(x=>uEq(x,u));
-function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];if(u.k==='e'){const a=EXAMS[u.n];return [1,a.after];}return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
+function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];if(u.k==='e'){const a=EXAMS[u.n];return [1,a.after];}if(u.k==='b')return [(u.n-1)*BIG_EVERY+1,u.n*BIG_EVERY];return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
 const unitWords=(p,u)=>{const [a,b]=unitLessons(u);const [x,y]=rangeOf(p,a,b);return p.words.slice(x,y);};
 const unitText=(p,u)=>u.k==='l'?(p.texts||{})[u.n]:u.k==='r'?(p.reviews||{})[u.n]:undefined;
 const unitSpeak=(p,u)=>(u.k==='s'&&p.id===1)?SPEAKS[u.n]:undefined;
@@ -669,6 +718,7 @@ function unitTitle(p,u){
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
+    if(u.k==='b')return {t:'Ümumi təkrar '+la+'–'+lb,s:cnt+' söz · 60 sual · 6 növ'};
     const [x,y]=rangeOf(p,u.n,u.n);return {t:'Dərs '+u.n,s:'söz '+(x+1+p.base)+'–'+(y+p.base)+' · '+cnt+' söz'};
   }
   const s=p.syllabus[u.n-1];return {t:u.n+'. '+s.title,s:s.sub};
@@ -811,10 +861,10 @@ function lastScore(pid,u){const a=S.scores[ukey(pid,u)];return a&&a.length?a[a.l
 function renderToday(){
   const {p,u}=S.cursor,PP=P(p),lt=unitTitle(PP,u),sc=lastScore(p,u),ok=hasContent(PP,u),tx=unitText(PP,u);
   $('#today').innerHTML=`<div><div class="eyebrow">Bu gün · ${esc(PP.name)}</div><h2>${esc(lt.t)}</h2><div class="meta"><span>${esc(lt.s)}</span>${sc!=null?`<span>son test <b class="num">${sc}%</b></span>`:''}${tx?'<span>📖 mətn var</span>':''}<span>${S.done.length} / ${totalUnits()} bitib</span></div></div>
-  <div class="acts">${u.k==='e'?'':`<button class="btn" id="tdWords">${PP.kind==='vocab'?'Sözlər':'Mövzu'}</button>`}${tx?'<button class="btn" id="tdText">📖 Mətn</button>':''}<button class="btn primary" id="tdTest" ${ok?'':'disabled'}>${u.k==='s'?'Danışığa başla':u.k==='e'?'İmtahana başla':'Testə başla'}</button></div>`;
+  <div class="acts">${u.k==='e'?'':`<button class="btn" id="tdWords">${PP.kind==='vocab'?'Sözlər':'Mövzu'}</button>`}${tx?'<button class="btn" id="tdText">📖 Mətn</button>':''}<button class="btn primary" id="tdTest" ${ok?'':'disabled'}>${u.k==='s'?'Danışığa başla':u.k==='e'?'İmtahana başla':u.k==='b'?'Ümumi təkrara başla':'Testə başla'}</button></div>`;
   if($('#tdWords'))$('#tdWords').addEventListener('click',()=>openUnit(p,u,'words'));
   const tt=$('#tdText');if(tt)tt.addEventListener('click',()=>openUnit(p,u,'text'));
-  $('#tdTest').addEventListener('click',()=>openUnit(p,u,u.k==='s'?'speak':u.k==='e'?'exam':'test'));
+  $('#tdTest').addEventListener('click',()=>openUnit(p,u,u.k==='s'?'speak':u.k==='e'?'exam':u.k==='b'?'big':'test'));
 }
 function renderTabs(){
   const box=$('#ptabs');box.innerHTML='';
@@ -828,7 +878,7 @@ function renderTabs(){
 }
 function renderGrid(){
   const id=selPart,p=P(id),un=partUnlocked(id);
-  $('#pEyebrow').textContent=p.name+' · '+lessonCount(p)+' dərs'+(p.kind==='vocab'?' · '+Math.floor(lessonCount(p)/REV_EVERY)+' təkrar · '+Math.floor(lessonCount(p)/SPK_EVERY)+' danışıq':'');
+  $('#pEyebrow').textContent=p.name+' · '+lessonCount(p)+' dərs'+(p.kind==='vocab'?' · '+Math.floor(lessonCount(p)/REV_EVERY)+' təkrar · '+Math.floor(lessonCount(p)/SPK_EVERY)+' danışıq · '+Math.floor(lessonCount(p)/BIG_EVERY)+' ümumi təkrar':'');
   const nt=$('#pNotice');
   if(!un){nt.hidden=false;nt.innerHTML=ICO('i-lock')+`<div><b>${esc(P(id-1).name)}</b> bitəndə bu pillə avtomatik açılacaq. Siyahıya baxa bilərsən, dərslərə giriş bağlıdır.</div>`;}
   else if(p.kind!=='vocab'||p.words.length===0){nt.hidden=false;nt.innerHTML=ICO('i-unlock')+`<div>Bu pillənin məzmunu hazırlanır — sən Pillə ${id-1}-də irəlilədikcə dərslər buraya əlavə olunacaq.</div>`;}
@@ -836,7 +886,7 @@ function renderGrid(){
   const g=$('#grid');g.innerHTML='';const frag=document.createDocumentFragment();
   units(p).forEach(u=>{
     const lt=unitTitle(p,u),sc=lastScore(id,u),ok=hasContent(p,u),cur=S.cursor.p===id&&uEq(S.cursor.u,u),unl=unitUnlocked(id,u),done=isDone(id,u);
-    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
+    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':u.k==='b'?' big':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
     t.innerHTML=`<div class="n">${esc(lt.t)}</div><div class="rg">${esc(lt.s)}</div><div class="sc"><i style="width:${sc??0}%"></i></div>`+(sc!=null?`<span class="badge num">${sc}%</span>`:(unl?'':`<span class="badge lkb">${ICO('i-lock')}</span>`))+(unitText(p,u)?'<span class="txt">📖</span>':'')+(ok?'':'<span class="txt">hazırlanır</span>');
     t.addEventListener('click',()=>{if(!unl&&u.k!=='e'){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
     frag.appendChild(t);
@@ -890,10 +940,12 @@ function openUnit(pid,u,tab){
   $('#tabSpeak').hidden=u.k!=='s';$('#tabSpeak').disabled=!spk||!unl;
   $('#lGoTest').hidden=u.k==='s';
   if(u.k==='s'){spkSetup(pid,u,spk,unl);}
-  const isEx=u.k==='e';
+  const isEx=u.k==='e',isBig=u.k==='b';
   $('#tabExam').hidden=!isEx;$('#tabExam').disabled=!isEx;
-  $('#tabWords').hidden=isEx;$('#tabTest').hidden=$('#tabTest').hidden||isEx;
+  $('#tabBig').hidden=!isBig;$('#tabBig').disabled=!isBig;
+  $('#tabWords').hidden=isEx;$('#tabTest').hidden=$('#tabTest').hidden||isEx||isBig;
   if(isEx)examSetup(pid,u,unl);
+  if(isBig)bigSetup(pid,u,unl);
   // words
   $('#lSoon').hidden=true;$('#wtools').hidden=!(p.kind==='vocab'&&(ok||u.k==='s'));
   if(p.kind==='vocab'&&(ok||u.k==='s')){
@@ -913,13 +965,14 @@ function openUnit(pid,u,tab){
   const ts=$('#testSoon');ts.hidden=ok&&unl;
   ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`:'Bu dərsin testi hazırlanır.')+'</div>';
   $('#sndTog').classList.toggle('on',S.sound!==false);
-  setTab(u.k==='e'?'exam':u.k==='s'&&(tab==='words'||!tab)?'speak':(tab||'words'));
+  setTab(u.k==='e'?'exam':u.k==='b'&&(tab==='words'||tab==='test'||!tab)?'big':u.k==='s'&&(tab==='words'||!tab)?'speak':(tab||'words'));
   show('lesson');
 }
 function setTab(t){
   curTab=t;
   document.querySelectorAll('.ltabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t?'true':'false'));
-  ['words','text','test','speak','exam'].forEach(x=>$('#lt-'+x).hidden=x!==t);
+  ['words','text','test','speak','exam','big'].forEach(x=>$('#lt-'+x).hidden=x!==t);
+  if(t!=='big')bigStop();
   if(t!=='text')plStop();
   if(t!=='speak')spkStopAll();
   if(t!=='exam')examStop();
@@ -1393,11 +1446,135 @@ function srsEnd(){
 $('#srsMore').addEventListener('click',srsStart);
 $('#srsHome').addEventListener('click',()=>go('home'));
 
+
+// ---------- ümumi təkrar (hər 10 dərsdən bir, 6 sual növü) ----------
+var BG={pid:1,u:null,q:[],i:0,score:{},max:{},wrong:[],left:0,tick:null,lock:false};
+const normAns=t=>String(t||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z' -]/g,'').replace(/\s+/g,' ').trim();
+function lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>1)return 2;const d=Array.from({length:m+1},(_,i)=>[i]);for(let j=1;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[m][n];}
+function checkTyped(input,word){const a=normAns(input),b=normAns(word);if(!a)return {ok:false};if(a===b)return {ok:true,exact:true};if(b.length>=5&&lev(a,b)===1)return {ok:true,exact:false};return {ok:false};}
+let SENTS=null;
+function sentencePool(){
+  if(SENTS)return SENTS;SENTS=[];
+  const add=(txt,upto)=>txt.replace(/["“”]/g,'').split(/(?<=[.!?])\s+/).forEach(x=>{const w=x.split(/\s+/).length;if(w>=6&&w<=26)SENTS.push({t:x.replace(/\n/g,' ').trim(),upto});});
+  for(const k in TEXTS)add(TEXTS[k].text,+k);
+  for(const k in REVIEWS)add(REVIEWS[k].text,(REVIEWS[k].lessons||[0,0,+k*3])[2]);
+  for(const k in SPEAK)SPEAK[k].items.forEach(x=>add(x,(SPEAK[k].lessons||[0,+k*5])[1]));
+  return SENTS;
+}
+function findSentence(w,upto,used){
+  const re=new RegExp('\\b'+w[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+  const c=sentencePool().filter(x=>x.upto<=upto+2&&re.test(x.t)&&!used.has(x.t));
+  if(!c.length)return null;const pick=c[Math.floor(Math.random()*c.length)];used.add(pick.t);
+  const m=pick.t.match(re);return {before:pick.t.slice(0,m.index),after:pick.t.slice(m.index+m[0].length),answer:m[0]};
+}
+function bigSetup(pid,u,unl){
+  bigStop();BG.pid=pid;BG.u=u;
+  const [a,b]=unitLessons(u);const ws=unitWords(P(pid),u);
+  $('#bgBadge').textContent=a+'–'+b;$('#bgTitle').textContent='Ümumi təkrar · Dərs '+a+'–'+b;
+  $('#bgSub').textContent=ws.length+' söz · son 10 dərsin hamısı · səhv etdiklərin və unutduqların prioritetlə';
+  $('#bgIntro').hidden=false;$('#bgRun').hidden=true;$('#bgEnd').hidden=true;
+  const w=$('#bgWarn');if(!unl){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Kilidlidir — əvvəlki addımı bitir.</div>';$('#bgStart').disabled=true;}else{w.hidden=true;$('#bgStart').disabled=false;}
+}
+function bigStart(){
+  const p=P(BG.pid),u=BG.u,[,upto]=unitLessons(u);
+  const ws=unitWords(p,u);
+  // prioritet: çətin sözlər və təkrarda unudulanlar
+  const weight=w=>{const h=S.hard[w[1]],x=(S.srs||{})[w[1]];return (h?2+(h.n||0):0)+(x?x.lapses*2:0)+Math.random();};
+  const ranked=ws.slice().sort((a,b)=>weight(b)-weight(a));
+  const take=(n)=>{const out=ranked.splice(0,n);return out.length<n?out.concat(pickWrap(ws,n-out.length)):out;};
+  const pool=p.words.slice(0,Math.max(rangeOf(p,upto,upto)[1],200));
+  const q=[];
+  take(12).forEach(w=>q.push({t:'mc',w,...buildQ(w,pool)}));
+  take(8).forEach(w=>{const b=buildQ(w,pool);q.push({t:'rev',w,opts:b.opts});});
+  take(12).forEach(w=>q.push({t:'recall',w}));
+  take(8).forEach(w=>q.push({t:'dict',w}));
+  const used=new Set();let gaps=0;const gapCands=ranked.slice();
+  for(const w of gapCands.concat(shuffle(ws))){if(gaps>=10)break;const sn=findSentence(w,upto,used);if(sn){q.push({t:'gap',w,sn});gaps++;}}
+  while(gaps<10){const w=take(1)[0];q.push({t:'recall',w});gaps++;}
+  for(let m=0;m<2;m++){const set=take(5);q.push({t:'match',ws:set,right:shuffle(set.map(x=>x[1]))});}
+  BG.q=shuffle(q.filter(x=>x.t!=='match')).concat(q.filter(x=>x.t==='match'));
+  BG.i=0;BG.wrong=[];BG.score={mc:0,rev:0,recall:0,dict:0,gap:0,match:0};BG.max={mc:0,rev:0,recall:0,dict:0,gap:0,match:0};
+  BG.q.forEach(x=>BG.max[x.t]+=x.t==='match'?5:1);
+  BG.left=40*60;$('#bgIntro').hidden=true;$('#bgEnd').hidden=true;$('#bgRun').hidden=false;
+  clearInterval(BG.tick);BG.tick=setInterval(()=>{BG.left--;const t=$('#bgTimer');t.textContent=fmt(BG.left);t.classList.toggle('low',BG.left<180);if(BG.left<=0)bigEnd();},1000);
+  $('#bgTimer').textContent=fmt(BG.left);bigDraw();
+}
+function bigStop(){if(BG)clearInterval(BG.tick);}
+const BQ_NAME={mc:'Tanıma',rev:'Tərs tanıma',recall:'Yadda saxlama',dict:'Diktant',gap:'Cümlədə boşluq',match:'Uyğunlaşdırma'};
+function bigDraw(){
+  const q=BG.q[BG.i],n=BG.q.length;BG.lock=false;
+  $('#bgPos').textContent=`${BG.i+1} / ${n}`;$('#bgBar').style.width=(BG.i/n*100)+'%';
+  const card=$('#bgCard');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
+  const B=$('#bgBody');const tag=`<div class="bq-type">${BQ_NAME[q.t]}</div>`;
+  if(q.t==='mc'||q.t==='rev'){
+    const prompt=q.t==='mc'?`<span>${esc(q.w[3])}</span><small>İngiliscəsi hansıdır?</small>`:`<span>${esc(q.w[1])}</span><small>Mənası nədir?</small>`;
+    B.innerHTML=tag+`<div class="prompt">${prompt}</div><div class="opts" id="bgOpts"></div>`;
+    q.opts.forEach((w,k)=>{const b=el('button','opt');b.innerHTML=`<kbd>${k+1}</kbd><span>${esc(q.t==='mc'?w[1]:w[3])}</span>`;b.addEventListener('click',()=>bigMC(k));$('#bgOpts').appendChild(b);});
+    if(q.t==='rev'&&S.sound!==false)sayWord(q.w);
+  } else if(q.t==='recall'||q.t==='dict'||q.t==='gap'){
+    let head='';
+    if(q.t==='recall')head=`<div class="prompt"><span>${esc(q.w[3])}</span><small>Sözü ingiliscə yaz · ipucu: <b>${esc(q.w[1][0])}</b>${'_'.repeat(Math.max(0,q.w[1].length-1)).split('').join(' ')} (${q.w[1].length} hərf)</small></div>`;
+    if(q.t==='dict')head=`<div class="prompt" style="font-size:1.2rem"><button class="btn" id="bgPlay">▶ Dinlə</button><small>Eşitdiyin sözü yaz</small></div>`;
+    if(q.t==='gap')head=`<div class="bq-sent">${esc(q.sn.before)}<span class="gap">${esc(q.sn.answer[0])}${'_'.repeat(Math.max(0,q.sn.answer.length-1))}</span>${esc(q.sn.after)}</div><div class="muted" style="font-size:.85rem;margin-top:6px">Mənası: ${esc(q.w[3])}</div>`;
+    B.innerHTML=tag+head+`<input class="bq-in" id="bgIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="yaz və Enter bas"><div class="bq-fb" id="bgFb"></div><div class="row" style="justify-content:flex-end"><button class="btn primary" id="bgOk">Yoxla</button></div>`;
+    const inp=$('#bgIn');setTimeout(()=>inp.focus(),50);
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();bigTyped();}});
+    $('#bgOk').addEventListener('click',bigTyped);
+    if(q.t==='dict'){const pb=$('#bgPlay');pb.addEventListener('click',()=>sayWord(q.w));setTimeout(()=>sayWord(q.w),250);}
+  } else if(q.t==='match'){
+    B.innerHTML=tag+`<div class="prompt" style="font-size:1.2rem"><span>Hər mənaya uyğun sözü seç</span></div><div class="bq-match" id="bgMatch"></div><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" id="bgOk">Yoxla</button></div>`;
+    q.ws.forEach((w,i)=>{const r=el('div','mr');r.innerHTML=`<div>${esc(w[3])}</div>`;const sel=el('select');sel.innerHTML='<option value="">— seç —</option>'+q.right.map(x=>`<option>${esc(x)}</option>`).join('');sel.dataset.ans=w[1];r.appendChild(sel);$('#bgMatch').appendChild(r);});
+    $('#bgOk').addEventListener('click',bigMatch);
+  }
+}
+function bigNext(delay){setTimeout(()=>{BG.i++;if(BG.i>=BG.q.length)bigEnd();else bigDraw();},delay);}
+function bigMC(k){
+  if(BG.lock)return;BG.lock=true;const q=BG.q[BG.i],ok=q.opts[k][1]===q.w[1];
+  [...$('#bgOpts').children].forEach((b,i)=>{b.disabled=true;if(q.opts[i][1]===q.w[1])b.classList.add('ok');else if(i===k&&!ok)b.classList.add('no');});
+  if(ok)BG.score[q.t]++;else BG.wrong.push(q.w);
+  if(S.sound!==false&&q.t==='mc')sayWord(q.w);srsGrade(q.w,ok);bigNext(ok?500:1300);
+}
+function bigTyped(){
+  if(BG.lock)return;const q=BG.q[BG.i],inp=$('#bgIn');if(!normAns(inp.value)){inp.focus();return;}
+  BG.lock=true;const target=q.t==='gap'?q.sn.answer:q.w[1];const r=checkTyped(inp.value,target);
+  inp.disabled=true;inp.classList.add(r.ok?'ok':'no');
+  $('#bgFb').innerHTML=r.ok?(r.exact?'<span style="color:var(--good)">Düzdür ✓</span>':`<span style="color:var(--good)">Düzdür</span> <span class="muted">— yazılışı: <b>${esc(target)}</b></span>`):`<span style="color:var(--bad)">Düz cavab:</span> <b>${esc(target)}</b> <span class="muted">${esc(q.w[4]||'')}</span>`;
+  if(r.ok)BG.score[q.t]++;else BG.wrong.push(q.w);
+  if(S.sound!==false)sayWord(q.w);srsGrade(q.w,r.ok);bigNext(r.ok?800:2200);
+}
+function bigMatch(){
+  if(BG.lock)return;const sels=[...document.querySelectorAll('#bgMatch select')];if(sels.some(x=>!x.value)){toast('Hamısını seç');return;}
+  BG.lock=true;const q=BG.q[BG.i];
+  sels.forEach((sel,i)=>{const ok=sel.value===sel.dataset.ans;sel.disabled=true;sel.classList.add(ok?'ok':'no');if(ok)BG.score.match++;else{BG.wrong.push(q.ws[i]);sel.insertAdjacentHTML('afterend',`<div class="muted" style="grid-column:2;font-size:.82rem">düz: <b>${esc(sel.dataset.ans)}</b></div>`);}srsGrade(q.ws[i],ok);});
+  bigNext(1800);
+}
+function bigEnd(){
+  bigStop();save();
+  const got=Object.values(BG.score).reduce((a,b)=>a+b,0),max=Object.values(BG.max).reduce((a,b)=>a+b,0);
+  const pct=max?Math.round(got/max*100):0,ok=pct>=BIG_PASS;
+  const k=ukey(BG.pid,BG.u);(S.scores[k]=S.scores[k]||[]).push({pct,at:new Date().toISOString()});
+  S.history.unshift({l:unitTitle(P(BG.pid),BG.u).t,pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);
+  if(ok)markDone(BG.pid,BG.u);else save();updateRing();
+  $('#bgRun').hidden=true;$('#bgEnd').hidden=false;
+  $('#bgEndEyebrow').textContent=unitTitle(P(BG.pid),BG.u).t+' · '+got+' / '+max+' bal';
+  const big=$('#bgPct');big.className='big num '+(ok?'':pct>=65?'mid':'low');countUp(big,pct);
+  const v=$('#bgVerdict');v.className='verdict '+(ok?'ok':'no');v.textContent=ok?'Keçdin ✓ Növbəti addım açıldı':'Keçid həddi '+BIG_PASS+'% — zəif növü təkrar et';
+  $('#bgScores').innerHTML=Object.keys(BQ_NAME).filter(t=>BG.max[t]).map(t=>{const p2=Math.round(BG.score[t]/BG.max[t]*100);return `<div class="sr"><span>${BQ_NAME[t]}</span><div class="t"><i class="${p2>=80?'':p2>=60?'mid':'low'}" style="width:${p2}%"></i></div><span class="num" style="text-align:right">${BG.score[t]}/${BG.max[t]}</span></div>`;}).join('');
+  const seen=new Set();$('#bgWrong').innerHTML='';BG.wrong.forEach(w=>{if(seen.has(w[1]))return;seen.add(w[1]);const sp=el('span',null,`${esc(w[1])} — ${esc(w[3])}`);sp.addEventListener('click',()=>sayWord(w));$('#bgWrong').appendChild(sp);});
+  const nx=nextUnit(BG.pid,BG.u);$('#bgNext').hidden=!(nx&&ok);
+}
+$('#bgStart').addEventListener('click',bigStart);
+$('#bgQuit').addEventListener('click',()=>{bigStop();$('#bgRun').hidden=true;$('#bgIntro').hidden=false;});
+$('#bgAgain').addEventListener('click',()=>bigSetup(BG.pid,BG.u,true));
+$('#bgNext').addEventListener('click',()=>{const nx=nextUnit(BG.pid,BG.u);if(nx)openUnit(nx.p,nx.u,'words');});
+$('#bgHome').addEventListener('click',()=>openPart(BG.pid));
+
 // ---------- keyboard ----------
 document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#q').focus();return;}
   if(e.target.matches('input,select,textarea'))return;
   if(view==='lesson'&&curTab==='test'&&T&&!$('#testRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)answer(k-1);return;}
+  if(view==='lesson'&&curTab==='big'&&!$('#bgRun').hidden){const q=BG.q[BG.i];if(q&&(q.t==='mc'||q.t==='rev')){const k=Number(e.key);if(k>=1&&k<=4)bigMC(k-1);}return;}
   if(view==='srs'&&!$('#srsRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)srsAnswer(k-1);return;}
   if(view==='lesson'&&curTab==='exam'&&!$('#exRun').hidden){const k=Number(e.key);if(k>=1&&k<=4)examAnswer(k-1);return;}
   if(view==='lesson'&&curTab==='speak'&&!$('#spkRun').hidden){if(e.key===' '){e.preventDefault();SK.listening?spkAbortListen():spkListen();return;}if(e.key.toLowerCase()==='p'){spkPlay();return;}if(e.key==='ArrowRight'){SK.i++;spkShow(true);return;}}
