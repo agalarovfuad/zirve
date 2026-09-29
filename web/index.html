@@ -322,6 +322,9 @@ main section.enter{animation:rise .22s var(--ease)}
 .ls-player{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2,var(--surface));position:sticky;top:8px;z-index:3}
 .ls-player .t{flex:1;height:6px;border-radius:9px;background:var(--line);overflow:hidden}
 .ls-player .t i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s linear}
+.ls-rate{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:.85rem}
+.ls-rate button{padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.85rem}
+.ls-rate button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
 .ls-sec{font-weight:700;margin:18px 0 8px;font-size:.95rem}
 .ls-q{padding:12px 0;border-top:1px solid var(--line)}
 .ls-q .qq{font-weight:600;margin-bottom:8px}
@@ -569,7 +572,7 @@ main section.enter{animation:rise .22s var(--ease)}
               <button class="sbtn" id="plStop" title="Başa qaytar"><svg><use href="#i-stop"/></svg></button>
               <div class="trk" id="plTrk"><i id="plBar"></i></div>
               <span class="tm num" id="plTime">0:00 / 0:00</span>
-              <select id="plRate" title="Sürət"><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.15">1.15×</option></select>
+              <select id="plRate" title="Sürət"><option value="0.7">0.7×</option><option value="0.8">0.8×</option><option value="0.9">0.9×</option><option value="1" selected>1×</option><option value="1.15">1.15×</option><option value="1.3">1.3×</option></select>
             </div>
             <div class="readwrap">
               <div class="reading" id="tBody" style="margin-top:16px"></div>
@@ -1549,6 +1552,7 @@ function bigDraw(){
 
 // --- dinləmə bölməsi ---
 const LN={audio:null,plays:0,playing:false,done:false,tts:false};
+const lsRate=()=>S.lsRate||1;
 function lsStop(){if(LN.audio){LN.audio.pause();}if(LN.tts&&'speechSynthesis' in window)speechSynthesis.cancel();LN.playing=false;}
 function lsText(L){return L.lines.map(x=>x[1]).join(' ');}
 function lsBtn(){const b=$('#lsPlay');if(!b)return;const lim=!LN.done&&LN.plays>=2&&!LN.playing;b.disabled=lim;
@@ -1556,12 +1560,12 @@ function lsBtn(){const b=$('#lsPlay');if(!b)return;const lim=!LN.done&&LN.plays>
 function lsPlay(q){
   if(!HAS_AUDIO){ // brauzerdə fayl yoxdursa — sistem səsi
     if(LN.playing){speechSynthesis.cancel();LN.playing=false;lsBtn();return;}
-    if(!LN.done&&LN.plays>=2)return;LN.plays++;LN.tts=true;LN.playing=true;ttsSay(lsText(q.L),.9);lsBtn();
+    if(!LN.done&&LN.plays>=2)return;LN.plays++;LN.tts=true;LN.playing=true;ttsSay(lsText(q.L),.9*lsRate());lsBtn();
     const chk=setInterval(()=>{if(!speechSynthesis.speaking){clearInterval(chk);LN.playing=false;lsBtn();}},500);return;}
   const a=LN.audio;
   if(LN.playing){a.pause();return;}
   if(a.currentTime===0||a.ended){if(!LN.done&&LN.plays>=2)return;LN.plays++;a.currentTime=0;}
-  a.play().catch(()=>{});
+  a.playbackRate=lsRate();a.play().catch(()=>{});
 }
 function lsDraw(q,B,tag){
   const L=q.L;lsStop();LN.plays=0;LN.done=false;LN.tts=false;LN.playing=false;
@@ -1569,6 +1573,7 @@ function lsDraw(q,B,tag){
   q.opts=L.mc.map(m=>shuffle(m[1].map((t,i)=>({t,ok:i===0}))));q.sel=L.mc.map(()=>-1);
   B.innerHTML=tag+`<div class="prompt" style="font-size:1.25rem;text-align:left"><span>${esc(L.title)}</span><small>${esc(L.kind)} · ${esc(L.level)} · səsi 2 dəfə dinləyə bilərsən — əvvəlcə sualları oxu</small></div>
   <div class="ls-player"><button class="btn primary sm" id="lsPlay"></button><div class="t"><i id="lsBar"></i></div><span class="muted num" id="lsTime">0:00</span></div>
+  <div class="ls-rate" id="lsRate"><span class="muted">Sürət</span>${[0.7,0.8,0.9,1,1.15,1.3].map(r=>`<button data-r="${r}"${r===lsRate()?' class="on"':''}>${r}×</button>`).join('')}</div>
   <div class="ls-sec">Hissə A — düzgün cavabı seç</div><div id="lsMC"></div>
   <div class="ls-sec">Hissə B — qeydləri tamamla <span class="muted" style="font-weight:400">(bir söz və ya rəqəm)</span></div><div id="lsGap"></div>
   <div class="bq-fb" id="lsFb" style="margin-top:10px"></div>
@@ -1583,6 +1588,8 @@ function lsDraw(q,B,tag){
     a.addEventListener('play',()=>{LN.playing=true;lsBtn();});a.addEventListener('pause',()=>{LN.playing=false;lsBtn();});
     a.addEventListener('ended',()=>{LN.playing=false;lsBtn();});
     a.addEventListener('timeupdate',()=>{if(a.duration){$('#lsBar').style.width=(a.currentTime/a.duration*100)+'%';$('#lsTime').textContent=fmt(a.currentTime)+' / '+fmt(a.duration);}});}
+  if(LN.audio)LN.audio.playbackRate=lsRate();
+  $('#lsRate').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.lsRate=Number(b.dataset.r);save();if(LN.audio)LN.audio.playbackRate=S.lsRate;[...$('#lsRate').querySelectorAll('button')].forEach(x=>x.classList.toggle('on',x===b));});
   lsBtn();$('#lsPlay').addEventListener('click',()=>lsPlay(q));
   $('#lsCheck').addEventListener('click',()=>lsCheck(q));
   $('#lsNext').addEventListener('click',()=>bigNext(0));
