@@ -1,6 +1,6 @@
 // Ümumi təkrar dinləmələri — hər 10 dərsdən bir, ~5 dəqiqə.
 // who: danışan -> [ad, səs]; lines: [danışan, mətn]; mc: [sual, [düz, səhv, səhv, səhv]] (səs sırası ilə);
-// gap: [qeyd cümləsi ___ ilə, [qəbul olunan cavablar]]. Səs: audio/b/N.mp3 (listen-gen.py).
+// gap: [qeyd cümləsi ___ ilə, [qəbul olunan cavablar]]. Səs: audio/bl/N.mp3 (listen-gen.py).
 const LISTEN = {
 1: { title:"A Weekend by the Lake", level:"A2", kind:"Dialoq · iki dost həftəsonu səfərini planlayır", rate:"-15%",
  who:{A:["Anna","en-US-AvaNeural"],B:["Mark","en-US-AndrewNeural"]},
