@@ -322,6 +322,23 @@ main section.enter{animation:rise .22s var(--ease)}
 .bq-sent{font-size:1.15rem;line-height:1.7;font-family:var(--body);font-weight:500}
 .bq-sent .gap{display:inline-block;min-width:90px;border-bottom:2px solid var(--accent);color:var(--accent-soft-ink);font-weight:700;text-align:center}
 .bq-match{display:grid;gap:8px}
+.ls-player{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2,var(--surface));position:sticky;top:8px;z-index:3}
+.ls-player .t{flex:1;height:6px;border-radius:9px;background:var(--line);overflow:hidden}
+.ls-player .t i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s linear}
+.ls-sec{font-weight:700;margin:18px 0 8px;font-size:.95rem}
+.ls-q{padding:12px 0;border-top:1px solid var(--line)}
+.ls-q .qq{font-weight:600;margin-bottom:8px}
+.ls-q .ch{display:grid;gap:6px}
+.ls-q .ch button{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);font:inherit;font-size:.95rem}
+.ls-q .ch button.sel{border-color:var(--accent);background:var(--accent-soft)}
+.ls-q .ch button.ok{border-color:var(--good);background:var(--good-soft)}
+.ls-q .ch button.no{border-color:var(--bad);background:var(--bad-soft)}
+.ls-gap{display:flex;flex-wrap:wrap;align-items:center;gap:6px;line-height:1.8}
+.ls-gap input{font:inherit;width:140px;padding:6px 10px;border-radius:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.ls-gap input.ok{border-color:var(--good);background:var(--good-soft)}
+.ls-gap input.no{border-color:var(--bad);background:var(--bad-soft)}
+.ls-tr{margin-top:14px;font-size:.95rem;line-height:1.65;display:grid;gap:6px}
+.ls-tr b{color:var(--accent-soft-ink)}
 .bq-match .mr{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center}
 .bq-match select{font:inherit;padding:10px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
 .bq-match select.ok{border-color:var(--good);background:var(--good-soft)}
@@ -444,8 +461,9 @@ main section.enter{animation:rise .22s var(--ease)}
           <div class="exam-head" style="border-color:var(--warm)"><div class="exam-badge" style="background:var(--warm);color:#2A1D05" id="bgBadge">1–10</div><div><div class="eyebrow">Ümumi təkrar</div><h2 id="bgTitle"></h2><div class="muted" style="font-size:.88rem;margin-top:4px" id="bgSub"></div></div></div>
           <div id="bgWarn" class="notice" hidden></div>
           <div class="card stack">
-            <div class="eyebrow">6 sual növü · 60 bal · 40 dəqiqə · keçid 80%</div>
+            <div class="eyebrow" id="bgMeta">6 sual növü · 60 bal · 40 dəqiqə · keçid 80%</div>
             <div class="muted" style="font-size:.9rem;display:grid;gap:4px">
+              <div id="bgListenLine" hidden><b>Dinləmə</b> — <span id="bgListenInfo"></span></div>
               <div><b>Tanıma</b> — azərbaycanca verilir, ingiliscəsini seç (12)</div>
               <div><b>Tərs tanıma</b> — ingiliscə verilir, mənasını seç (8)</div>
               <div><b>Yadda saxlama</b> — mənası verilir, sözü özün yaz (12)</div>
@@ -659,12 +677,13 @@ main section.enter{animation:rise .22s var(--ease)}
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1790616124"></script>
-<script src="texts.js?v=1790616124"></script>
-<script src="syllabus.js?v=1790616124"></script>
-<script src="speak.js?v=1790616124"></script>
-<script src="lemma.js?v=1790616124"></script>
-<script src="exams.js?v=1790616124"></script>
+<script src="words.js?v=1790645849"></script>
+<script src="texts.js?v=1790645849"></script>
+<script src="syllabus.js?v=1790645849"></script>
+<script src="speak.js?v=1790645849"></script>
+<script src="lemma.js?v=1790645849"></script>
+<script src="exams.js?v=1790645849"></script>
+<script src="listen.js?v=1790645849"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -718,7 +737,7 @@ function unitTitle(p,u){
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
-    if(u.k==='b')return {t:'Ümumi təkrar '+la+'–'+lb,s:cnt+' söz · 60 sual · 6 növ'};
+    if(u.k==='b')return {t:'Ümumi təkrar '+la+'–'+lb,s:cnt+' söz'+(LISTEN[u.n]?' · 5 dəq dinləmə':'')+' · '+(LISTEN[u.n]?7:6)+' növ'};
     const [x,y]=rangeOf(p,u.n,u.n);return {t:'Dərs '+u.n,s:'söz '+(x+1+p.base)+'–'+(y+p.base)+' · '+cnt+' söz'};
   }
   const s=p.syllabus[u.n-1];return {t:u.n+'. '+s.title,s:s.sub};
@@ -1449,7 +1468,7 @@ $('#srsHome').addEventListener('click',()=>go('home'));
 
 // ---------- ümumi təkrar (hər 10 dərsdən bir, 6 sual növü) ----------
 var BG={pid:1,u:null,q:[],i:0,score:{},max:{},wrong:[],left:0,tick:null,lock:false};
-const normAns=t=>String(t||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z' -]/g,'').replace(/\s+/g,' ').trim();
+const normAns=t=>String(t||'').toLowerCase().replace(/[’']/g,"'").replace(/[^a-z0-9' -]/g,'').replace(/\s+/g,' ').trim();
 function lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>1)return 2;const d=Array.from({length:m+1},(_,i)=>[i]);for(let j=1;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[m][n];}
 function checkTyped(input,word){const a=normAns(input),b=normAns(word);if(!a)return {ok:false};if(a===b)return {ok:true,exact:true};if(b.length>=5&&lev(a,b)===1)return {ok:true,exact:false};return {ok:false};}
 let SENTS=null;
@@ -1472,6 +1491,9 @@ function bigSetup(pid,u,unl){
   const [a,b]=unitLessons(u);const ws=unitWords(P(pid),u);
   $('#bgBadge').textContent=a+'–'+b;$('#bgTitle').textContent='Ümumi təkrar · Dərs '+a+'–'+b;
   $('#bgSub').textContent=ws.length+' söz · son 10 dərsin hamısı · səhv etdiklərin və unutduqların prioritetlə';
+  const L=LISTEN[u.n];$('#bgListenLine').hidden=!L;
+  if(L)$('#bgListenInfo').textContent=L.kind+' («'+L.title+'», '+L.level+'), ~5 dəq, 2 dəfə dinləmək olar · 12 sual: seçmə + qeyd tamamlama';
+  $('#bgMeta').textContent=L?'7 sual növü · 72 bal · 50 dəqiqə · keçid 80%':'6 sual növü · 60 bal · 40 dəqiqə · keçid 80%';
   $('#bgIntro').hidden=false;$('#bgRun').hidden=true;$('#bgEnd').hidden=true;
   const w=$('#bgWarn');if(!unl){w.hidden=false;w.innerHTML=ICO('i-lock')+'<div>Kilidlidir — əvvəlki addımı bitir.</div>';$('#bgStart').disabled=true;}else{w.hidden=true;$('#bgStart').disabled=false;}
 }
@@ -1493,19 +1515,21 @@ function bigStart(){
   while(gaps<10){const w=take(1)[0];q.push({t:'recall',w});gaps++;}
   for(let m=0;m<2;m++){const set=take(5);q.push({t:'match',ws:set,right:shuffle(set.map(x=>x[1]))});}
   BG.q=shuffle(q.filter(x=>x.t!=='match')).concat(q.filter(x=>x.t==='match'));
-  BG.i=0;BG.wrong=[];BG.score={mc:0,rev:0,recall:0,dict:0,gap:0,match:0};BG.max={mc:0,rev:0,recall:0,dict:0,gap:0,match:0};
-  BG.q.forEach(x=>BG.max[x.t]+=x.t==='match'?5:1);
-  BG.left=40*60;$('#bgIntro').hidden=true;$('#bgEnd').hidden=true;$('#bgRun').hidden=false;
+  const L=LISTEN[u.n];if(L)BG.q.unshift({t:'listen',L,n:u.n});
+  BG.i=0;BG.wrong=[];BG.score={listen:0,mc:0,rev:0,recall:0,dict:0,gap:0,match:0};BG.max={listen:0,mc:0,rev:0,recall:0,dict:0,gap:0,match:0};
+  BG.q.forEach(x=>BG.max[x.t]+=x.t==='match'?5:x.t==='listen'?x.L.mc.length+x.L.gap.length:1);
+  BG.left=(L?50:40)*60;$('#bgIntro').hidden=true;$('#bgEnd').hidden=true;$('#bgRun').hidden=false;
   clearInterval(BG.tick);BG.tick=setInterval(()=>{BG.left--;const t=$('#bgTimer');t.textContent=fmt(BG.left);t.classList.toggle('low',BG.left<180);if(BG.left<=0)bigEnd();},1000);
   $('#bgTimer').textContent=fmt(BG.left);bigDraw();
 }
-function bigStop(){if(BG)clearInterval(BG.tick);}
-const BQ_NAME={mc:'Tanıma',rev:'Tərs tanıma',recall:'Yadda saxlama',dict:'Diktant',gap:'Cümlədə boşluq',match:'Uyğunlaşdırma'};
+function bigStop(){if(BG){clearInterval(BG.tick);lsStop();}}
+const BQ_NAME={listen:'Dinləmə',mc:'Tanıma',rev:'Tərs tanıma',recall:'Yadda saxlama',dict:'Diktant',gap:'Cümlədə boşluq',match:'Uyğunlaşdırma'};
 function bigDraw(){
   const q=BG.q[BG.i],n=BG.q.length;BG.lock=false;
   $('#bgPos').textContent=`${BG.i+1} / ${n}`;$('#bgBar').style.width=(BG.i/n*100)+'%';
   const card=$('#bgCard');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
   const B=$('#bgBody');const tag=`<div class="bq-type">${BQ_NAME[q.t]}</div>`;
+  if(q.t==='listen'){lsDraw(q,B,tag);return;}
   if(q.t==='mc'||q.t==='rev'){
     const prompt=q.t==='mc'?`<span>${esc(q.w[3])}</span><small>İngiliscəsi hansıdır?</small>`:`<span>${esc(q.w[1])}</span><small>Mənası nədir?</small>`;
     B.innerHTML=tag+`<div class="prompt">${prompt}</div><div class="opts" id="bgOpts"></div>`;
@@ -1527,7 +1551,60 @@ function bigDraw(){
     $('#bgOk').addEventListener('click',bigMatch);
   }
 }
-function bigNext(delay){setTimeout(()=>{BG.i++;if(BG.i>=BG.q.length)bigEnd();else bigDraw();},delay);}
+
+// --- dinləmə bölməsi ---
+const LN={audio:null,plays:0,playing:false,done:false,tts:false};
+function lsStop(){if(LN.audio){LN.audio.pause();}if(LN.tts&&'speechSynthesis' in window)speechSynthesis.cancel();LN.playing=false;}
+function lsText(L){return L.lines.map(x=>x[1]).join(' ');}
+function lsBtn(){const b=$('#lsPlay');if(!b)return;const lim=!LN.done&&LN.plays>=2&&!LN.playing;b.disabled=lim;
+  b.textContent=LN.playing?'❚❚ Pauza':lim?'Dinləmə bitdi':LN.plays===0?'▶ Dinlə (1/2)':(LN.audio&&LN.audio.currentTime>0&&!LN.audio.ended)?'▶ Davam et':LN.done?'▶ Yenidən dinlə':'▶ Yenidən dinlə (2/2)';}
+function lsPlay(q){
+  if(!HAS_AUDIO){ // brauzerdə fayl yoxdursa — sistem səsi
+    if(LN.playing){speechSynthesis.cancel();LN.playing=false;lsBtn();return;}
+    if(!LN.done&&LN.plays>=2)return;LN.plays++;LN.tts=true;LN.playing=true;ttsSay(lsText(q.L),.9);lsBtn();
+    const chk=setInterval(()=>{if(!speechSynthesis.speaking){clearInterval(chk);LN.playing=false;lsBtn();}},500);return;}
+  const a=LN.audio;
+  if(LN.playing){a.pause();return;}
+  if(a.currentTime===0||a.ended){if(!LN.done&&LN.plays>=2)return;LN.plays++;a.currentTime=0;}
+  a.play().catch(()=>{});
+}
+function lsDraw(q,B,tag){
+  const L=q.L;lsStop();LN.plays=0;LN.done=false;LN.tts=false;LN.playing=false;
+  LN.audio=HAS_AUDIO?new Audio('audio/b/'+q.n+'.mp3'):null;
+  q.opts=L.mc.map(m=>shuffle(m[1].map((t,i)=>({t,ok:i===0}))));q.sel=L.mc.map(()=>-1);
+  B.innerHTML=tag+`<div class="prompt" style="font-size:1.25rem;text-align:left"><span>${esc(L.title)}</span><small>${esc(L.kind)} · ${esc(L.level)} · səsi 2 dəfə dinləyə bilərsən — əvvəlcə sualları oxu</small></div>
+  <div class="ls-player"><button class="btn primary sm" id="lsPlay"></button><div class="t"><i id="lsBar"></i></div><span class="muted num" id="lsTime">0:00</span></div>
+  <div class="ls-sec">Hissə A — düzgün cavabı seç</div><div id="lsMC"></div>
+  <div class="ls-sec">Hissə B — qeydləri tamamla <span class="muted" style="font-weight:400">(bir söz və ya rəqəm)</span></div><div id="lsGap"></div>
+  <div class="bq-fb" id="lsFb" style="margin-top:10px"></div>
+  <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn primary" id="lsCheck">Cavabları yoxla</button><button class="btn primary" id="lsNext" hidden>Davam →</button></div>
+  <div id="lsTr" hidden></div>`;
+  L.mc.forEach((m,i)=>{const d=el('div','ls-q');d.innerHTML=`<div class="qq">${i+1}. ${esc(m[0])}</div><div class="ch"></div>`;
+    q.opts[i].forEach((o,k)=>{const b=el('button');b.textContent=String.fromCharCode(65+k)+') '+o.t;b.addEventListener('click',()=>{if(LN.checked)return;q.sel[i]=k;[...b.parentNode.children].forEach((x,j)=>x.classList.toggle('sel',j===k));});d.querySelector('.ch').appendChild(b);});
+    $('#lsMC').appendChild(d);});
+  L.gap.forEach((g,i)=>{const d=el('div','ls-q');const [a,b]=g[0].split('___');d.innerHTML=`<div class="ls-gap"><b>${L.mc.length+i+1}.</b> ${esc(a)}<input data-i="${i}" autocomplete="off" autocapitalize="off" spellcheck="false">${esc(b||'')}</div>`;$('#lsGap').appendChild(d);});
+  LN.checked=false;
+  if(LN.audio){const a=LN.audio;
+    a.addEventListener('play',()=>{LN.playing=true;lsBtn();});a.addEventListener('pause',()=>{LN.playing=false;lsBtn();});
+    a.addEventListener('ended',()=>{LN.playing=false;lsBtn();});
+    a.addEventListener('timeupdate',()=>{if(a.duration){$('#lsBar').style.width=(a.currentTime/a.duration*100)+'%';$('#lsTime').textContent=fmt(a.currentTime)+' / '+fmt(a.duration);}});}
+  lsBtn();$('#lsPlay').addEventListener('click',()=>lsPlay(q));
+  $('#lsCheck').addEventListener('click',()=>lsCheck(q));
+  $('#lsNext').addEventListener('click',()=>bigNext(0));
+}
+function lsCheck(q){
+  const L=q.L,left=q.sel.filter(x=>x<0).length+[...document.querySelectorAll('#lsGap input')].filter(x=>!normAns(x.value)).length;
+  if(left&&!LN.warned){LN.warned=true;toast(left+' sual cavabsızdır — yenə bassan yoxlanacaq');return;}
+  LN.warned=false;LN.checked=true;LN.done=true;let got=0;
+  document.querySelectorAll('#lsMC .ls-q').forEach((d,i)=>{const bs=[...d.querySelectorAll('button')];bs.forEach((b,k)=>{b.disabled=true;if(q.opts[i][k].ok)b.classList.add('ok');else if(k===q.sel[i])b.classList.add('no');});if(q.sel[i]>=0&&q.opts[i][q.sel[i]].ok)got++;});
+  document.querySelectorAll('#lsGap input').forEach(inp=>{const g=L.gap[+inp.dataset.i];const rs=g[1].map(a=>checkTyped(inp.value,a)),ok=rs.some(r=>r.ok),exact=rs.some(r=>r.exact);inp.disabled=true;inp.classList.add(ok?'ok':'no');if(ok){got++;if(!exact)inp.insertAdjacentHTML('afterend',` <span class="muted">yazılışı: <b>${esc(g[1][0])}</b></span>`);}else inp.insertAdjacentHTML('afterend',` <span style="color:var(--good);font-weight:700">${esc(g[1][0])}</span>`);});
+  BG.score.listen=got;const tot=L.mc.length+L.gap.length;
+  $('#lsFb').innerHTML=`<b>${got} / ${tot}</b> düz · səhvlərə bax, sonra mətni oxuyub bir də dinlə`;
+  $('#lsCheck').hidden=true;$('#lsNext').hidden=false;lsBtn();
+  const tr=$('#lsTr');tr.hidden=false;tr.innerHTML=`<button class="btn sm ghost" id="lsTrBtn">Mətni göstər</button><div class="ls-tr" hidden>${L.lines.map(x=>`<div><b>${esc(L.who[x[0]][0])}:</b> ${esc(x[1])}</div>`).join('')}</div>`;
+  $('#lsTrBtn').addEventListener('click',()=>{const t=tr.querySelector('.ls-tr');t.hidden=!t.hidden;$('#lsTrBtn').textContent=t.hidden?'Mətni göstər':'Mətni gizlət';});
+}
+function bigNext(delay){lsStop();setTimeout(()=>{BG.i++;if(BG.i>=BG.q.length)bigEnd();else bigDraw();},delay);}
 function bigMC(k){
   if(BG.lock)return;BG.lock=true;const q=BG.q[BG.i],ok=q.opts[k][1]===q.w[1];
   [...$('#bgOpts').children].forEach((b,i)=>{b.disabled=true;if(q.opts[i][1]===q.w[1])b.classList.add('ok');else if(i===k&&!ok)b.classList.add('no');});
@@ -1697,6 +1774,7 @@ if('serviceWorker' in navigator&&!NATIVE&&(location.protocol==='https:'||locatio
     const list=W.map(w=>'audio/words/'+slug(w[1])+'.mp3');
     Object.keys(TEXTS).forEach(k=>list.push('audio/t/'+k+'.mp3'));Object.keys(REVIEWS).forEach(k=>list.push('audio/r/'+k+'.mp3'));
     Object.keys(SPEAKS).forEach(k=>SPEAKS[k].items.forEach((_,i)=>list.push('audio/s/'+k+'-'+(i+1)+'.mp3')));
+    if(typeof LISTEN!=='undefined')Object.keys(LISTEN).forEach(k=>list.push('audio/b/'+k+'.mp3'));
     const c=await caches.open('zirve-audio');let done=0;
     const worker=async()=>{while(list.length){const u=list.shift();try{if(!(await c.match(u))){const r=await fetch(u);if(r.ok)await c.put(u,r);}}catch(e){}done++;if(done%20===0){$('#offlineBar').style.width=(done/ (done+list.length)*100)+'%';$('#offlineMsg').textContent='Yüklənir… '+done+' / '+(done+list.length);}}};
     await Promise.all([worker(),worker(),worker(),worker()]);
