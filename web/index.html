@@ -675,6 +675,7 @@ main section.enter{animation:rise .22s var(--ease)}
       <div class="stats" id="stats"></div>
       <div class="card" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:10px">Dərslər üzrə son nəticə</div><div class="bars" id="bars"></div></div>
       <div class="card" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:10px">Son testlər</div><div id="hist" class="hist"></div></div>
+      <div class="card" style="margin-top:14px" id="moveCard"></div>
       <div class="card" style="margin-top:14px" id="offlineCard" hidden><div class="row" style="justify-content:space-between"><div><div class="eyebrow">Oflayn</div><div class="muted" style="font-size:.88rem" id="offlineMsg">Bütün səsləri (44 MB) telefona yüklə — sonra internetsiz işləyir.</div></div><button class="btn primary" id="offlineBtn">Səsləri oflayn yüklə</button></div><div class="prog" id="offlineProg" hidden><i id="offlineBar" style="width:0%"></i></div></div>
     </section>
   </main>
@@ -1758,7 +1759,23 @@ $('#hardPlayAll').addEventListener('click',async()=>{
 });
 
 // ---------- progress ----------
+// başqa cihaza köçürmə: qısa kod = indiki addım; daxil edəndə ondan əvvəlki hər şey bitmiş sayılır
+function moveApply(code){
+  code=String(code||'').trim().toLowerCase().replace(/\s+/g,'');
+  let seq=[];PARTS.forEach(p=>units(p).forEach(u=>seq.push({p:p.id,u,k:ukey(p.id,u)})));
+  const at=seq.findIndex(x=>x.k===code);if(at<0)return false;
+  seq.slice(0,at).forEach(x=>{if(!S.done.includes(x.k))S.done.push(x.k);});
+  S.cursor={p:seq[at].p,u:seq[at].u};save();return seq[at];
+}
+function renderMove(){
+  const box=$('#moveCard');if(!box)return;const k=ukey(S.cursor.p,S.cursor.u);
+  box.innerHTML=`<div class="eyebrow">Başqa cihaza köçür</div>
+  <div class="muted" style="font-size:.88rem;margin:4px 0 10px">Bu cihazdakı kodun: <b style="font-size:1.25rem;color:var(--ink);letter-spacing:.04em">${esc(k)}</b> · ${esc(unitTitle(P(S.cursor.p),S.cursor.u).t)}<br>Digər cihazda bu kodu aşağıya yaz — həmin dərsə qədər hamısı açılacaq.</div>
+  <div class="row" style="gap:8px"><input id="moveIn" class="bq-in" style="font-size:1rem;padding:10px 12px;flex:1;min-width:140px" placeholder="məs. 1-14" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" id="moveGo">Aç</button></div>`;
+  $('#moveGo').addEventListener('click',()=>{const r=moveApply($('#moveIn').value);if(!r){toast('Kod tapılmadı');return;}toast(unitTitle(P(r.p),r.u).t+' açıldı ✓');updateRing();renderProgress();});
+}
 function renderProgress(){
+  renderMove();
   let vocabDone=0;S.done.forEach(k=>{const m=k.match(/^([12])-(\d+)$/);if(m){const p=P(+m[1]);const [x,y]=rangeOf(p,+m[2],+m[2]);vocabDone+=y-x;}});const spkDone=S.done.filter(k=>/^[12]-s\d+$/.test(k)).length;
   const tests=Object.values(S.scores).flat();
   const avg=tests.length?Math.round(tests.reduce((a,b)=>a+b.pct,0)/tests.length):0;
