@@ -4,3 +4,6 @@ build-texts.json
 build-words-need.json
 audio-gen.log
 .DS_Store
+web/teacher.js
+web/teacher/
+togrul-src/

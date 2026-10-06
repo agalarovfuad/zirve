@@ -331,6 +331,30 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 .bq-sent{font-size:1.15rem;line-height:1.7;font-family:var(--body);font-weight:500}
 .bq-sent .gap{display:inline-block;min-width:90px;border-bottom:2px solid var(--accent);color:var(--accent-soft-ink);font-weight:700;text-align:center}
 .bq-match{display:grid;gap:8px}
+.tc-row{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.tc-row:first-child{border-top:0}
+.tc-row .en{font-family:var(--display);font-weight:600}
+.tc-row .ex{grid-column:1/-1;font-size:.86rem;color:var(--muted);font-style:italic}
+.tc-row .ok{color:var(--good);font-weight:700}
+.tc-card{cursor:pointer;transition:transform .12s var(--ease),border-color .15s}
+.tc-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tc-badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-soft-ink)}
+.tc-text p{margin:0 0 12px;line-height:1.75;font-size:1.05rem}
+.tc-text mark{background:var(--warm-soft);color:inherit;border-radius:4px;padding:0 2px;cursor:pointer}
+.tc-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.tc-tools input,.tc-tools select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.ie-q{padding:10px 0;border-top:1px solid var(--line)}
+.ie-q .qq{margin-bottom:6px}
+.ie-q input{font:inherit;width:200px;max-width:100%;padding:6px 10px;border-radius:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
+.ie-q input.ok{border-color:var(--good);background:var(--good-soft)}.ie-q input.no{border-color:var(--bad);background:var(--bad-soft)}
+.ie-ch{display:flex;flex-wrap:wrap;gap:6px}
+.ie-ch button{padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.92rem;text-align:left}
+.ie-ch button.sel{border-color:var(--accent);background:var(--accent-soft)}
+.ie-ch button.ok{border-color:var(--good);background:var(--good-soft)}.ie-ch button.no{border-color:var(--bad);background:var(--bad-soft)}
+.ie-ctx{white-space:pre-wrap;font-size:.95rem;line-height:1.6;padding:12px 14px;border-radius:10px;background:var(--surface-2,var(--accent-soft));margin:8px 0}
+.ie-split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.ie-split .pass{max-height:72vh;overflow:auto;position:sticky;top:8px}
+@media (max-width:860px){.ie-split{grid-template-columns:1fr}.ie-split .pass{position:static;max-height:none}}
 .ls-stick{position:sticky;top:8px;z-index:3;display:grid;gap:8px}
 .ls-player{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2,var(--surface))}
 .ls-sub{padding:14px 16px;border-radius:var(--r-sm);background:var(--ink);color:var(--bg);font-size:1.15rem;line-height:1.5;min-height:3.2em;box-shadow:0 6px 20px rgba(0,0,0,.18)}
@@ -436,6 +460,7 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
   <nav class="nav" id="nav">
     <button data-v="home" aria-current="page">Dərslər</button>
     <button data-v="hard">Çətin sözlər<span class="cnt" id="hardCnt" hidden>0</span></button>
+    <button data-v="teacher" id="navTeacher" hidden>Müəllim</button>
     <button data-v="progress">İrəliləyiş</button>
   </nav>
 
@@ -682,6 +707,12 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
       <div id="hardEmpty" class="empty" hidden></div>
     </section>
 
+    <section id="v-teacher" hidden>
+      <div class="eyebrow">Toğrulun materialları</div><h2 style="margin-bottom:12px">Müəllim</h2>
+      <div class="ltabs" id="tcTabs" role="tablist"><button data-t="ph" aria-selected="true">İfadələr</button><button data-t="mv">Mövzular</button><button data-t="ts">Testlər</button><button data-t="ie">IELTS sınaq</button></div>
+      <div id="tcBody" style="margin-top:14px"></div>
+    </section>
+
     <section id="v-progress" hidden>
       <div class="eyebrow">Ümumi</div><h2 style="margin-bottom:12px">İrəliləyiş</h2>
       <div class="stats" id="stats"></div>
@@ -702,6 +733,7 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 <script src="exams.js"></script>
 <script src="listen.js"></script>
 <script src="listen-times.js"></script>
+<script src="teacher.js"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -886,7 +918,7 @@ function show(v){
   document.querySelectorAll('#nav button').forEach(b=>{const m=(v==='part'||v==='lesson'||v==='srs')?'home':v;if(b.dataset.v===m)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});
   window.scrollTo({top:0});
 }
-function go(v){HD.playing=false;if(v==='home')renderHome();if(v==='hard')renderHard();if(v==='progress')renderProgress();show(v);}
+function go(v){HD.playing=false;tcStopAudio();if(v==='home')renderHome();if(v==='hard')renderHard();if(v==='progress')renderProgress();if(v==='teacher')tcRender();show(v);}
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(b)go(b.dataset.v);});
 $('#brand').addEventListener('click',()=>go('home'));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
@@ -1725,6 +1757,172 @@ $('#bgQuit').addEventListener('click',()=>{bigStop();$('#bgRun').hidden=true;$('
 $('#bgAgain').addEventListener('click',()=>bigSetup(BG.pid,BG.u,true));
 $('#bgNext').addEventListener('click',()=>{const nx=nextUnit(BG.pid,BG.u);if(nx)openUnit(nx.p,nx.u,'words');});
 $('#bgHome').addEventListener('click',()=>openPart(BG.pid));
+
+
+// ---------- Müəllim (Toğrulun materialları — yalnız Mac tətbiqində, teacher.js) ----------
+const HAS_T=typeof TEACHER!=='undefined';
+if(HAS_T)$('#navTeacher').hidden=false;
+let TC={tab:'ph',q:'',topic:'all',audio:null,run:null};
+const tcSlug=t=>String(t).toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,60);
+function tcStopAudio(){if(TC.audio){TC.audio.pause();TC.audio=null;}if('speechSynthesis' in window)speechSynthesis.cancel();}
+function tcSay(text,file){tcStopAudio();if(HAS_AUDIO&&file){const a=new Audio(file);TC.audio=a;a.play().catch(()=>ttsSay(text,.9));}else ttsSay(text,.9);}
+const tcPhraseAudio=ph=>'teacher/p/'+tcSlug(ph.en)+'.mp3';
+function tcPh(en){return TEACHER.phrases.find(p=>p.en.toLowerCase()===String(en).toLowerCase());}
+function tcStat(){return S.tph||(S.tph={});}
+$('#tcBody').addEventListener('click',e=>{const m=e.target.closest('mark[data-en], .gw[data-en]');if(!m)return;const p=tcPh(m.dataset.en);if(!p)return;toast(p.en+' — '+p.az);tcSay(p.en,tcPhraseAudio(p));});
+$('#tcTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;TC.tab=b.dataset.t;TC.run=null;tcStopAudio();tcRender();});
+function tcRender(){
+  if(!HAS_T)return;
+  document.querySelectorAll('#tcTabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===TC.tab?'true':'false'));
+  ({ph:tcPhrases,mv:tcTopics,ts:tcTests,ie:tcIelts})[TC.tab]();
+}
+// İfadələr
+function tcPhrases(){
+  const B=$('#tcBody'),st=tcStat();
+  const topics=TEACHER.topics;
+  B.innerHTML=`<div class="tc-tools"><input id="tcQ" placeholder="axtar…" value="${esc(TC.q)}" style="flex:1;min-width:160px"><select id="tcTopic"><option value="all">Bütün mövzular</option>${topics.map(t=>`<option value="${t.id}"${TC.topic===t.id?' selected':''}>${esc(t.title)}</option>`).join('')}</select><button class="btn primary" id="tcTest">Test · 20 sual</button></div>
+  <div class="muted" style="font-size:.85rem;margin-bottom:8px" id="tcCnt"></div><div class="card" id="tcList"></div>`;
+  const draw=()=>{const q=TC.q.toLowerCase();const L=TEACHER.phrases.filter(p=>(TC.topic==='all'||p.topic===TC.topic)&&(!q||p.en.toLowerCase().includes(q)||p.az.toLowerCase().includes(q)));
+    const learned=L.filter(p=>(st[p.en]||{}).c>=2).length;
+    $('#tcCnt').textContent=L.length+' ifadə · öyrənilib: '+learned+' (testdə 2 dəfə düz)';
+    $('#tcList').innerHTML=L.map((p,i)=>`<div class="tc-row" data-i="${TEACHER.phrases.indexOf(p)}"><div><span class="en">${esc(p.en)}</span> — ${esc(p.az)}</div><div class="muted" style="font-size:.78rem">${(st[p.en]||{}).c>=2?'<span class="ok">✓</span> ':''}${esc(p.lvl||'')}</div>${p.ex?`<div class="ex">${esc(p.ex)}</div>`:''}</div>`).join('')||'<div class="muted">Tapılmadı</div>';};
+  draw();
+  $('#tcQ').addEventListener('input',e=>{TC.q=e.target.value;draw();});
+  $('#tcTopic').addEventListener('change',e=>{TC.topic=e.target.value;draw();});
+  $('#tcList').addEventListener('click',e=>{const r=e.target.closest('.tc-row');if(!r)return;const p=TEACHER.phrases[+r.dataset.i];tcSay(p.en,tcPhraseAudio(p));});
+  $('#tcTest').addEventListener('click',()=>{const pool=TEACHER.phrases.filter(p=>TC.topic==='all'||p.topic===TC.topic);if(pool.length<4){toast('Bu mövzuda az ifadə var');return;}tcPhraseTest(pool);});
+}
+function tcPhraseTest(pool){
+  const st=tcStat();
+  const weight=p=>{const x=st[p.en]||{};return (x.w||0)*2-(x.c||0)+Math.random()*2;};
+  const pick20=pool.slice().sort((a,b)=>weight(b)-weight(a)).slice(0,Math.min(20,pool.length));
+  const all=TEACHER.phrases;
+  const items=pick20.map((p,i)=>{const dis=shuffle(all.filter(x=>x!==p)).slice(0,3);const dir=i%5<3?'az':'en';return {p,dir,opts:shuffle([p,...dis])};});
+  TC.run={kind:'ph',items:shuffle(items),i:0,right:0,wrong:[]};tcPhraseDraw();
+}
+function tcPhraseDraw(){
+  const R=TC.run,B=$('#tcBody');if(R.i>=R.items.length)return tcRunEnd();
+  const it=R.items[R.i];
+  B.innerHTML=`<div class="test-head"><div class="muted num">${R.i+1} / ${R.items.length}</div><button class="btn sm ghost" id="tcQuit">Dayandır</button></div><div class="prog"><i style="width:${R.i/R.items.length*100}%"></i></div>
+  <div class="card qcard"><div class="prompt"><span>${esc(it.dir==='az'?it.p.az:it.p.en)}</span><small>${it.dir==='az'?'İngiliscəsi hansıdır?':'Mənası nədir?'}</small></div><div class="opts" id="tcOpts"></div></div>`;
+  it.opts.forEach((o,k)=>{const b=el('button','opt',`<kbd>${k+1}</kbd><span>${esc(it.dir==='az'?o.en:o.az)}</span>`);b.addEventListener('click',()=>{
+    if(R.lock)return;R.lock=true;const ok=o===it.p;const st=tcStat(),x=st[it.p.en]||(st[it.p.en]={c:0,w:0});if(ok){x.c++;R.right++;}else{x.w++;x.c=0;R.wrong.push(it.p);}save();
+    [...$('#tcOpts').children].forEach((bb,j)=>{bb.disabled=true;if(it.opts[j]===it.p)bb.classList.add('ok');else if(j===k)bb.classList.add('no');});
+    tcSay(it.p.en,tcPhraseAudio(it.p));setTimeout(()=>{R.lock=false;if(TC.run!==R)return;R.i++;tcPhraseDraw();},ok?700:1600);});$('#tcOpts').appendChild(b);});
+  if(it.dir==='en')tcSay(it.p.en,tcPhraseAudio(it.p));
+  $('#tcQuit').addEventListener('click',()=>{TC.run=null;tcRender();});
+}
+function tcRunEnd(){
+  const R=TC.run,B=$('#tcBody'),n=R.items.length,pct=Math.round(R.right/n*100);
+  if(R.kind==='test'){const k='q:'+R.t.id;(S.tts||(S.tts={}))[k]=Math.max(S.tts[k]||0,pct);save();}
+  B.innerHTML=`<div class="card result"><div class="eyebrow">${R.kind==='test'?esc(R.t.title):'İfadələr testi'}</div><div class="big num ${pct>=80?'':pct>=60?'mid':'low'}">${pct}%</div><div class="verdict ${pct>=80?'ok':'no'}">${R.right} / ${n} düz</div>
+  ${R.wrong.length?`<div class="card" style="text-align:left;width:100%;max-width:560px"><div class="eyebrow" style="margin-bottom:8px">Səhvlər</div>${R.wrong.map(w=>w.en?`<div style="padding:4px 0"><b>${esc(w.en)}</b> — ${esc(w.az)}</div>`:`<div style="padding:6px 0;border-top:1px solid var(--line)">${esc(w.q)}<br><span class="muted">Sənin cavabın:</span> ${esc(w.you||'—')} · <span style="color:var(--good);font-weight:700">${esc(w.ans)}</span></div>`).join('')}</div>`:''}
+  <div class="row" style="justify-content:center"><button class="btn primary" id="tcAgain">Yenidən</button><button class="btn ghost" id="tcBack">Geri</button></div></div>`;
+  $('#tcAgain').addEventListener('click',()=>{if(R.kind==='test')tcRunTest(R.t);else tcPhraseTest(R.items.map(x=>x.p));});
+  $('#tcBack').addEventListener('click',()=>{TC.run=null;tcRender();});
+}
+// Mövzular
+function tcTopics(){
+  const B=$('#tcBody');const parts=[...new Set(TEACHER.topics.map(t=>t.part))];
+  B.innerHTML=parts.map(pt=>`<div class="gl-h">${esc(pt)}</div><div class="parts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">${TEACHER.topics.filter(t=>t.part===pt).map(t=>`<div class="card tc-card" data-id="${t.id}"><div style="font-weight:700;margin-bottom:4px">${esc(t.title)}</div><div class="muted" style="font-size:.86rem">${esc(t.question)}</div><div class="muted" style="font-size:.78rem;margin-top:6px">${(t.phrases||[]).length} ifadə</div></div>`).join('')}</div>`).join('');
+  B.querySelectorAll('.tc-card').forEach(c=>c.addEventListener('click',()=>tcTopic(c.dataset.id)));
+}
+function tcTopic(id){
+  const t=TEACHER.topics.find(x=>x.id===id),B=$('#tcBody');tcStopAudio();
+  const phs=(t.phrases||[]).map(tcPh).filter(Boolean);
+  let html=esc(t.text);
+  phs.slice().sort((a,b)=>b.en.length-a.en.length).forEach(p=>{const re=new RegExp('('+p.en.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');html=html.replace(re,`<mark data-en="${esc(p.en)}">$1</mark>`);});
+  B.innerHTML=`<button class="btn sm ghost" id="tcBackT">← Mövzular</button>
+  <div class="card" style="margin-top:10px"><span class="tc-badge">${esc(t.part)}</span><h3 style="margin:8px 0 6px">${esc(t.title)}</h3><div style="font-size:1.08rem;font-weight:600;margin-bottom:12px">${esc(t.question)}</div>
+  <div class="row" style="gap:8px;margin-bottom:12px"><button class="btn primary sm" id="tcPlay">▶ Dinlə</button><button class="btn sm" id="tcStop">■</button>${phs.length>=4?'<button class="btn sm" id="tcTT">Bu mövzunun testi</button>':''}</div>
+  <div class="tc-text">${html.split(/\n\n+/).map(x=>'<p>'+x.replace(/\n/g,'<br>')+'</p>').join('')}</div></div>
+  ${phs.length?`<div class="card" style="margin-top:12px"><div class="eyebrow" style="margin-bottom:8px">İfadələr · ${phs.length}</div><div class="gloss">${phs.map(p=>`<div class="gw" data-en="${esc(p.en)}"><b>${esc(p.en)}</b> — ${esc(p.az)}</div>`).join('')}</div></div>`:''}`;
+  $('#tcBackT').addEventListener('click',()=>{tcStopAudio();tcRender();});
+  $('#tcPlay').addEventListener('click',()=>tcSay(t.text,'teacher/t/'+t.id+'.mp3'));
+  $('#tcStop').addEventListener('click',tcStopAudio);
+  if($('#tcTT'))$('#tcTT').addEventListener('click',()=>tcPhraseTest(phs));
+}
+// Testlər
+function tcTests(){
+  const B=$('#tcBody');
+  B.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px">${TEACHER.tests.map(t=>{const best=(S.tts||{})['q:'+t.id];return `<div class="card tc-card" data-id="${t.id}"><div style="font-weight:700">${esc(t.title)}</div><div class="muted" style="font-size:.85rem;margin-top:4px">${t.items.length} sual${best!=null?' · ən yaxşı: <b>'+best+'%</b>':''}</div></div>`;}).join('')}</div>`;
+  B.querySelectorAll('.tc-card').forEach(c=>c.addEventListener('click',()=>tcRunTest(TEACHER.tests.find(x=>x.id===c.dataset.id))));
+}
+function tcRunTest(t){
+  TC.run={kind:'test',t,items:t.items.map(it=>it.t==='mc'?{...it,sh:shuffle(it.opts.map((o,i)=>({o,ok:i===0})))}:it),i:0,right:0,wrong:[]};tcTestDraw();
+}
+function tcTestDraw(){
+  const R=TC.run,B=$('#tcBody');if(R.i>=R.items.length)return tcRunEnd();
+  const it=R.items[R.i];
+  B.innerHTML=`<div class="test-head"><div class="muted num">${esc(R.t.title)} · ${R.i+1} / ${R.items.length}</div><button class="btn sm ghost" id="tcQuit">Dayandır</button></div><div class="prog"><i style="width:${R.i/R.items.length*100}%"></i></div>
+  <div class="card qcard"><div class="bq-sent" style="margin-bottom:12px">${esc(it.q)}</div>${it.t==='mc'?'<div class="opts" id="tcOpts"></div>':'<input class="bq-in" id="tcIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="yaz və Enter bas"><div class="bq-fb" id="tcFb"></div><div class="row" style="justify-content:flex-end"><button class="btn primary" id="tcOk">Yoxla</button></div>'}</div>`;
+  $('#tcQuit').addEventListener('click',()=>{TC.run=null;tcRender();});
+  const next=(ok,you,ans)=>{if(ok)R.right++;else R.wrong.push({q:it.q,you,ans});setTimeout(()=>{if(TC.run!==R)return;R.i++;tcTestDraw();},ok?700:1800);};
+  if(it.t==='mc'){it.sh.forEach((x,k)=>{const b=el('button','opt',`<kbd>${k+1}</kbd><span>${esc(x.o)}</span>`);b.addEventListener('click',()=>{if(R.lock)return;R.lock=true;[...$('#tcOpts').children].forEach((bb,j)=>{bb.disabled=true;if(it.sh[j].ok)bb.classList.add('ok');else if(j===k)bb.classList.add('no');});R.lock=false;next(x.ok,x.o,it.opts[0]);});$('#tcOpts').appendChild(b);});}
+  else{const inp=$('#tcIn');setTimeout(()=>inp.focus(),50);const go=()=>{if(!normAns(inp.value)||inp.disabled)return;const ok=it.ans.some(a=>normAns(a)===normAns(inp.value));inp.disabled=true;inp.classList.add(ok?'ok':'no');$('#tcFb').innerHTML=ok?'<span style="color:var(--good)">Düzdür ✓</span>':`<span style="color:var(--bad)">Düz cavab:</span> <b>${esc(it.ans[0])}</b>`;next(ok,inp.value,it.ans[0]);};
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();go();}});$('#tcOk').addEventListener('click',go);}
+}
+// IELTS sınaq
+const IE_BAND_L=[[39,9],[37,8.5],[35,8],[32,7.5],[30,7],[26,6.5],[23,6],[18,5.5],[16,5],[13,4.5],[10,4],[8,3.5],[6,3],[4,2.5]];
+const IE_BAND_R=[[39,9],[37,8.5],[35,8],[33,7.5],[30,7],[27,6.5],[23,6],[19,5.5],[15,5],[13,4.5],[10,4],[8,3.5],[6,3],[4,2.5]];
+const ieBand=(raw,T)=>{for(const [r,v] of T)if(raw>=r)return v;return 2;};
+function tcIelts(){
+  const B=$('#tcBody'),L=TEACHER.listening,Rd=TEACHER.reading;const lb=(S.tts||{})['ie:L'],rb=(S.tts||{})['ie:R'];
+  B.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+  ${L?`<div class="card tc-card" id="ieL"><span class="tc-badge">Listening · 30 dəq</span><h3 style="margin:8px 0 4px">${esc(L.title)}</h3><div class="muted" style="font-size:.86rem">4 hissə · 40 sual · real audio${L.answerSource==='none'?' · cavab açarı yoxdur':''}${lb!=null?' · son nəticə: <b>'+lb+'</b>':''}</div></div>`:''}
+  ${Rd?`<div class="card tc-card" id="ieR"><span class="tc-badge">Reading · 60 dəq</span><h3 style="margin:8px 0 4px">${esc(Rd.title)}</h3><div class="muted" style="font-size:.86rem">${Rd.passages.length} mətn · 40 sual${rb!=null?' · son nəticə: <b>'+rb+'</b>':''}</div></div>`:''}</div>`;
+  if($('#ieL'))$('#ieL').addEventListener('click',()=>ieRun('L'));
+  if($('#ieR'))$('#ieR').addEventListener('click',()=>ieRun('R'));
+}
+function ieQ(q){
+  // bir sual: gap → input, opts/tfng/ynng → düymələr
+  const opts=q.t==='tfng'?['TRUE','FALSE','NOT GIVEN']:q.t==='ynng'?['YES','NO','NOT GIVEN']:(q.opts||null);
+  const body=opts?`<div class="ie-ch" data-n="${q.n}">${opts.map((o,k)=>`<button data-k="${k}">${esc(o)}</button>`).join('')}</div>`:`<input data-n="${q.n}" autocomplete="off" autocapitalize="off" spellcheck="false">`;
+  return `<div class="ie-q"><div class="qq"><b>${q.n}.</b> ${esc(q.q||'')}</div>${body}<span class="ie-key" data-n="${q.n}"></span></div>`;
+}
+function ieGroups(groups){return groups.map(g=>`<div class="gl-h" style="text-transform:none;letter-spacing:0;font-size:.88rem">${esc(g.instructions||'')}</div>${g.context?`<div class="ie-ctx">${esc(g.context)}</div>`:''}${g.image&&/^data:image\//.test(g.image)?`<img src="${g.image}" alt="" style="max-width:100%;border-radius:10px;margin:6px 0;background:#fff">`:''}${g.questions.map(ieQ).join('')}`).join('');}
+function ieRun(kind){
+  tcStopAudio();const B=$('#tcBody');const X=kind==='L'?TEACHER.listening:TEACHER.reading;
+  const secs=kind==='L'?X.sections:X.passages;TC.run={kind:'ie',k:kind,cur:0,ans:{},t0:Date.now()};
+  const draw=()=>{const s=secs[TC.run.cur];tcStopAudio();
+    B.innerHTML=`<div class="test-head"><div class="row" style="gap:6px">${secs.map((x,i)=>`<button class="btn sm${i===TC.run.cur?' primary':''}" data-s="${i}">${kind==='L'?'Hissə':'Mətn'} ${i+1}</button>`).join('')}</div><div class="row" style="gap:8px"><span class="timer num" id="ieT"></span><button class="btn sm primary" id="ieDone">Bitir və yoxla</button><button class="btn sm ghost" id="ieQuit">Çıx</button></div></div>
+    ${kind==='L'?`<div class="card"><div class="muted" style="margin-bottom:8px">${esc(s.intro||'')}</div><audio controls preload="metadata" src="teacher/${esc(s.audio)}" style="width:100%"></audio><div class="muted" style="font-size:.85rem;margin-top:6px">${esc(s.instructions||'')}</div><div style="margin-top:8px">${ieGroups(s.groups)}</div></div>`
+    :`<div class="ie-split"><div class="card pass"><h3 style="margin-top:0">${esc(s.title||'')}</h3><div class="tc-text">${esc(s.text).split(/\n\n+/).map(x=>'<p>'+x+'</p>').join('')}</div></div><div class="card">${ieGroups(s.groups)}</div></div>`}`;
+    B.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{TC.run.cur=+b.dataset.s;draw();}));
+    B.querySelectorAll('.ie-q input').forEach(inp=>{inp.value=TC.run.ans[inp.dataset.n]||'';inp.addEventListener('input',()=>{TC.run.ans[inp.dataset.n]=inp.value;});});
+    B.querySelectorAll('.ie-ch').forEach(ch=>{const n=ch.dataset.n;[...ch.children].forEach(b=>{if(String(TC.run.ans[n])===b.dataset.k)b.classList.add('sel');b.addEventListener('click',()=>{if(TC.run.checked)return;TC.run.ans[n]=b.dataset.k;[...ch.children].forEach(x=>x.classList.toggle('sel',x===b));});});});
+    $('#ieDone').addEventListener('click',()=>ieCheck(kind,X,draw));
+    $('#ieQuit').addEventListener('click',()=>{clearInterval(TC.tick);TC.run=null;tcStopAudio();tcRender();});
+    if(TC.run.checked)ieMark(kind,X);
+  };
+  const lim=(kind==='L'?30:60)*60;clearInterval(TC.tick);TC.tick=setInterval(()=>{if(!TC.run||TC.run.kind!=='ie'){return;}const left=lim-Math.floor((Date.now()-TC.run.t0)/1000);const t=$('#ieT');if(t)t.textContent=TC.run.checked?'':fmt(Math.max(0,left));},1000);
+  draw();
+}
+function ieAll(X,kind){const out=[];(kind==='L'?X.sections:X.passages).forEach(s=>s.groups.forEach(g=>g.questions.forEach(q=>out.push(q))));return out;}
+function ieIsRight(q,a){
+  if(a==null||a==='')return false;
+  if(q.ans==null)return null;
+  const opts=q.t==='tfng'?['TRUE','FALSE','NOT GIVEN']:q.t==='ynng'?['YES','NO','NOT GIVEN']:q.opts;
+  if(opts){const pick=opts[+a];if(typeof q.ans==='number')return +a===q.ans;const A=String(q.ans).trim().toLowerCase();const P=String(pick||'').trim().toLowerCase();return P===A||P.split(/[\s.)]+/)[0]===A;}
+  const arr=Array.isArray(q.ans)?q.ans:[q.ans];return arr.some(x=>normAns(x)===normAns(a));
+}
+function ieKeyText(q){if(q.ans==null)return '—';const opts=q.t==='tfng'?['TRUE','FALSE','NOT GIVEN']:q.t==='ynng'?['YES','NO','NOT GIVEN']:q.opts;if(opts&&typeof q.ans==='number')return opts[q.ans];return Array.isArray(q.ans)?q.ans.join(' / '):String(q.ans);}
+function ieCheck(kind,X,draw){
+  const Q=ieAll(X,kind);const empty=Q.filter(q=>!TC.run.ans[q.n]).length;
+  if(empty&&!TC.run.warned){TC.run.warned=true;toast(empty+' sual boşdur — yenə bassan yoxlanacaq');return;}
+  TC.run.checked=true;draw();
+}
+function ieMark(kind,X){
+  const Q=ieAll(X,kind);let right=0,known=0;
+  Q.forEach(q=>{const r=ieIsRight(q,TC.run.ans[q.n]);if(q.ans!=null)known++;if(r)right++;
+    const inp=document.querySelector(`.ie-q input[data-n="${q.n}"]`);if(inp){inp.disabled=true;if(r!=null)inp.classList.add(r?'ok':'no');}
+    const ch=document.querySelector(`.ie-ch[data-n="${q.n}"]`);if(ch)[...ch.children].forEach(b=>{b.disabled=true;if(r!=null&&b.classList.contains('sel'))b.classList.add(r?'ok':'no');});
+    const key=document.querySelector(`.ie-key[data-n="${q.n}"]`);if(key&&r===false)key.innerHTML=` <span style="color:var(--good);font-weight:700">→ ${esc(ieKeyText(q))}</span>`;});
+  if(!known){toast('Bu testin cavab açarı yoxdur');return;}
+  const raw=Math.round(right/known*40),band=ieBand(raw,kind==='L'?IE_BAND_L:IE_BAND_R);
+  if(!TC.run.saved){TC.run.saved=true;(S.tts||(S.tts={}))['ie:'+kind]=band;save();toast(right+' / '+known+' düz · band '+band);}
+  const h=$('.test-head');if(h&&!$('#ieRes'))h.insertAdjacentHTML('afterend',`<div class="card" id="ieRes" style="margin:10px 0;text-align:center"><div class="eyebrow">Nəticə</div><div class="big num" style="font-size:2.4rem">${band}</div><div class="muted">${right} / ${known} düz · təxmini IELTS band</div></div>`);
+}
 
 // ---------- keyboard ----------
 document.addEventListener('keydown',e=>{

@@ -3,7 +3,7 @@
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 rm -rf "$ROOT/docs" && mkdir -p "$ROOT/docs"
-rsync -a --exclude 'index.html' "$ROOT/web/" "$ROOT/docs/"
+rsync -a --exclude 'index.html' --exclude 'teacher.js' --exclude 'teacher/' "$ROOT/web/" "$ROOT/docs/"
 python3 - "$ROOT" <<'PY'
 import sys,io
 root=sys.argv[1]
