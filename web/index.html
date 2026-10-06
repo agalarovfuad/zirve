@@ -194,6 +194,18 @@ main section.enter{animation:rise .22s var(--ease)}
 .player select{padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:.8rem}
 .gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 16px;font-size:.9rem}
 .gloss b{font-family:var(--display);font-weight:600}
+.gloss .gw{cursor:pointer;border-radius:6px;padding:2px 4px;margin:-2px -4px}
+.gloss .gw:hover{background:var(--accent-soft)}
+.gl-h{font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.gl-h:first-child{margin-top:0}
+details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.reading .tw{cursor:pointer;border-radius:4px;transition:background .12s}
+.reading .tw:hover{background:var(--accent-soft)}
+.reading .tw.new{border-bottom:2px dotted var(--accent)}
+.reading .tw.hard{background:var(--warm-soft)}
+.wpop{position:fixed;z-index:50;min-width:200px;max-width:300px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 32px rgba(0,0,0,.22);font-size:.92rem}
+.wpop .ww{font-family:var(--display);font-size:1.25rem;font-weight:700}
+.wpop .row{margin-top:8px;gap:6px}
 .tf{display:grid;gap:8px}
 .tf .q{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);transition:background .2s,border-color .2s}
 .tf .q span{flex:1;min-width:180px}
@@ -589,7 +601,7 @@ main section.enter{animation:rise .22s var(--ease)}
               <span class="muted" style="font-size:.82rem" id="readHint">Oxuyub bitirəndən sonra bas — mətn və səs 10 dəqiqə bağlanır, suallar açılır. Geri yol yoxdur.</span>
             </div>
           </div>
-          <div class="card"><div class="eyebrow" style="margin-bottom:8px">Bu dərsə qədər keçilməyən sözlər</div><div class="gloss" id="tGloss"></div><div class="eyebrow" style="margin:14px 0 8px" id="tAutoHead" hidden>Siyahıda sonra gələn sözlər (dərs nömrəsi ilə)</div><div class="gloss" id="tAuto"></div></div>
+          <div class="card"><div class="eyebrow" style="margin-bottom:2px">Mətndəki sözlər</div><div class="muted" style="font-size:.84rem;margin-bottom:12px">Mətndə istənilən sözə bas — tərcüməsi, oxunuşu və səsi çıxacaq. Aşağıda mətnin bütün sözləri var.</div><div id="tGlossAll"></div></div>
           <div class="card" id="tQwrap" hidden>
             <div class="row" style="justify-content:space-between;margin-bottom:10px"><div class="eyebrow">Anlama sualları</div><span id="readScore" class="pill"></span></div>
             <div class="tf" id="tQ"></div>
@@ -1020,6 +1032,41 @@ function toggleHard(w){if(S.hard[w[1]])delete S.hard[w[1]];else{const l=lessonOf
 
 // ---------- mətn üçün avtomatik lüğət ----------
 const NAMES={elvin:'Elvin (ad)',aysel:'Aysel (ad)',baku:'Bakı',shirvan:'Şirvan',europe:'Avropa',english:'ingilis dili',saturday:'şənbə',sunday:'bazar',monday:'bazar ertəsi'};
+// mətnin bütün sözləri: qrup (new / hard / cur / prev), tərcümə, oxunuş, dərs
+let TG={map:new Map(),list:[]};
+let TG_RANK=null;
+function tgKey(tok){const ls=lemmas(tok);if(!ls.length)return null;const ex=TG.ex||{};const e=ls.find(l=>l in ex);if(e)return 'x:'+e;if(!TG_RANK){TG_RANK={};allW().forEach(w=>{const k=w[1].toLowerCase();if(!(k in TG_RANK))TG_RANK[k]=w;});}const h=ls.find(l=>l in TG_RANK);return h?'w:'+h:'n:'+ls[0];}
+function textGloss(p,a,b,text,extra){
+  const ex={};extra.forEach(([w,az])=>w.toLowerCase().split(/\s*\/\s*/).forEach(x=>{ex[x.replace(/[^a-z']/g,'')]=[w,az];}));
+  TG={map:new Map(),list:[],ex};
+  text.split(/[^A-Za-z']+/).filter(Boolean).forEach(tok=>{
+    const k=tgKey(tok);if(!k||TG.map.has(k))return;let e;
+    if(k[0]==='x'){const [w,az]=ex[k.slice(2)];e={k,w,az,grp:'new',ln:0};}
+    else if(k[0]==='w'){const W0=TG_RANK[k.slice(2)];const ln=lessonOfWord(W0).n;const lp=lessonOfWord(W0).p;
+      const later=lp>p.id||(lp===p.id&&ln>b);
+      e={k,w:W0[1],az:W0[3],ox:W0[4],W:W0,ln,grp:later?'new':S.hard[W0[1]]?'hard':(lp===p.id&&ln>=a&&ln<=b)?'cur':'prev'};}
+    else{const base=k.slice(2);const az=NAMES[base];if(!az&&!/^[A-Z]/.test(tok))return;e={k,w:tok,az:az||'ad',grp:'new',ln:0};}
+    TG.map.set(k,e);TG.list.push(e);
+  });
+  TG.list.sort((x,y)=>(x.grp==='prev'?y.ln-x.ln:(x.ln||0)-(y.ln||0)));
+  return TG;
+}
+function wpopClose(){const d=$('#wpop');if(d)d.remove();}
+function wpopShow(k,anchor){
+  wpopClose();const e=TG.map.get(k);if(!e)return;
+  const d=el('div','wpop');d.id='wpop';
+  const isHard=e.W&&S.hard[e.W[1]];
+  d.innerHTML=`<div class="ww">${esc(e.w)}</div>${e.ox?`<div class="muted">${esc(e.ox)}</div>`:''}<div style="margin-top:4px">${esc(e.az)}</div>${e.ln?`<div class="muted" style="font-size:.8rem;margin-top:2px">Dərs ${e.ln}</div>`:''}
+  ${e.W?`<div class="row"><button class="btn sm" id="wpPlay">▶ Dinlə</button><button class="btn sm${isHard?'':' primary'}" id="wpHard">${isHard?'★ Çətinlərdədir':'☆ Çətinlərə əlavə et'}</button></div>`:''}`;
+  document.body.appendChild(d);
+  const r=anchor.getBoundingClientRect(),w=d.offsetWidth,h=d.offsetHeight;
+  let x=Math.min(Math.max(8,r.left+r.width/2-w/2),innerWidth-w-8),y=r.bottom+8;if(y+h>innerHeight-8)y=r.top-h-8;
+  d.style.left=x+'px';d.style.top=Math.max(8,y)+'px';
+  if(e.W){sayWord(e.W);$('#wpPlay').addEventListener('click',ev=>{ev.stopPropagation();sayWord(e.W);});
+    $('#wpHard').addEventListener('click',ev=>{ev.stopPropagation();if(!S.hard[e.W[1]]){const l=lessonOfWord(e.W);S.hard[e.W[1]]={p:l.p,l:l.n,n:0};save();updateRing();toast('Çətin sözlərə əlavə olundu');}wpopClose();});}
+}
+document.addEventListener('click',e=>{const t=e.target.closest('.reading .tw, #tGlossAll .gw');if(t){if($('#tBody').classList.contains('blur')&&t.classList.contains('tw'))return;wpopShow(t.dataset.k,t);e.stopPropagation();return;}if(!e.target.closest('#wpop'))wpopClose();});
+window.addEventListener('scroll',wpopClose,{passive:true});
 function autoGloss(p,upto,text,extra){
   const ex=new Set(extra.map(e=>e[0].toLowerCase().split(/\s*\/\s*/)).flat().map(x=>x.replace(/[^a-z']/g,'')));
   const rank={};p.words.forEach(w=>{const k=w[1].toLowerCase();if(!(k in rank))rank[k]=w;});
@@ -1041,11 +1088,14 @@ function renderText(p,u,T){
   $('#tTitle').textContent=T.title;
   $('#tWords').textContent=T.text.split(/\s+/).length+' söz';
   $('#tBody').innerHTML=T.text.split(/\n\n+/).map(x=>'<p>'+esc(x)+'</p>').join('');
-  const upto=unitLessons(u)[1];const auto=autoGloss(p,upto,T.text,T.extra);
-  const names=auto.filter(x=>!x.ln),later=auto.filter(x=>x.ln);
-  $('#tGloss').innerHTML=T.extra.map(([a,b])=>`<div><b>${esc(a)}</b> — ${esc(b)}</div>`).concat(names.map(x=>`<div><b>${esc(x.w)}</b> — ${esc(x.az)}</div>`)).join('');
-  $('#tAutoHead').hidden=!later.length;
-  $('#tAuto').innerHTML=later.map(x=>`<div><b>${esc(x.w)}</b> — ${esc(x.az)} <span class="muted" style="font-size:.78rem">· Dərs ${x.ln}</span></div>`).join('');
+  const [ua,ub]=unitLessons(u);TG=textGloss(p,ua,ub,T.text,T.extra);
+  $('#tBody').innerHTML=T.text.split(/\n\n+/).map(par=>'<p>'+par.split(/([A-Za-z']+)/).map((t,i)=>{if(i%2===0)return esc(t);const k=tgKey(t);const e=k&&TG.map.get(k);return e?`<span class="tw${e.grp==='new'?' new':e.grp==='hard'?' hard':''}" data-k="${esc(k)}">${esc(t)}</span>`:esc(t);}).join('')+'</p>').join('');
+  const G=TG.list,grp=g=>G.filter(x=>x.grp===g);
+  const li=x=>`<div class="gw" data-k="${esc(x.k)}"><b>${esc(x.w)}</b> — ${esc(x.az)}${x.ln?` <span class="muted" style="font-size:.78rem">· Dərs ${x.ln}</span>`:''}</div>`;
+  const sec=(t,arr)=>arr.length?`<div class="gl-h">${t} · ${arr.length}</div><div class="gloss">${arr.map(li).join('')}</div>`:'';
+  const prev=grp('prev');
+  $('#tGlossAll').innerHTML=sec('Yeni sözlər — hələ keçməmisən',grp('new'))+sec('Çətin sözlərin',grp('hard'))+sec(ua===ub?'Bu dərsin sözləri':'Bu dərslərin sözləri',grp('cur'))+
+    (prev.length?`<details class="gl-more"><summary>Əvvəlki dərslərdən · ${prev.length} (aç)</summary><div class="gloss">${prev.map(li).join('')}</div></details>`:'');
   const q=$('#tQ');q.innerHTML='';RD.total=0;RD.answered=0;RD.right=0;RD.key=ukey(p.id,u);
   (T.q||[]).forEach(([st,ans])=>{
     RD.total++;
