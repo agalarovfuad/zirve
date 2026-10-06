@@ -3,7 +3,7 @@ import WebKit
 import Speech
 import AVFoundation
 
-final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NSWindow!
     var webView: WKWebView!
 
@@ -16,6 +16,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     var lastChange = Date()
     var silenceTimer: Timer?
     var listening = false
+
+    // --- səs yazma (Speaking): fayl + istəyə bağlı transcript ---
+    var recFile: AVAudioFile?
+    var recURL: URL?
+    var recReq: SFSpeechAudioBufferRecognitionRequest?
+    var recTask: SFSpeechRecognitionTask?
+    var recText = ""
+    var recording = false
 
     let stateURL: URL = {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -39,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         webView = WKWebView(frame: .zero, configuration: cfg)
         webView.navigationDelegate = self
+        webView.uiDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
 
         let rect = NSRect(x: 0, y: 0, width: 1140, height: 800)
@@ -73,6 +82,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             switch cmd {
             case "listen": startListening()
             case "stop": stopListening(final: true)
+            case "rec-start": recStart()
+            case "rec-stop": recStop()
+            case "snapshot":
+                if let name = d["name"] as? String, let data = d["data"] as? String {
+                    let dir = stateURL.deletingLastPathComponent().appendingPathComponent("snapshots", isDirectory: true)
+                    try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+                    let safe = name.replacingOccurrences(of: "/", with: "-")
+                    try? data.data(using: .utf8)?.write(to: dir.appendingPathComponent(safe + ".json"), options: .atomic)
+                }
+            case "export":
+                if let name = d["name"] as? String, let data = d["data"] as? String {
+                    let desk = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask)[0]
+                    let url = desk.appendingPathComponent(name.replacingOccurrences(of: "/", with: "-"))
+                    do { try data.data(using: .utf8)?.write(to: url, options: .atomic); js(["status": "exported", "text": url.path]) }
+                    catch { js(["status": "error", "text": "Fayl yazılmadı."]) }
+                }
             default: break
             }
         }
@@ -138,6 +163,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         request?.endAudio(); task?.cancel(); task = nil; request = nil
         let was = listening; listening = false
         if final && was { js(["status": "final", "text": lastText]) }
+    }
+
+    // səs yazmağa başla: mikrofon → m4a fayl; nitq tanıma icazəsi varsa paralel transcript
+    func recStart() {
+        if recording || listening { return }
+        AVCaptureDevice.requestAccess(for: .audio) { ok in
+            guard ok else { self.rjs(["status": "error", "text": "Mikrofona icazə verilməyib (Sistem Ayarları → Gizlilik → Mikrofon)."]); return }
+            SFSpeechRecognizer.requestAuthorization { auth in
+                DispatchQueue.main.async { self.recBegin(transcribe: auth == .authorized) }
+            }
+        }
+    }
+    func recBegin(transcribe: Bool) {
+        let input = audioEngine.inputNode
+        let fmt = input.outputFormat(forBus: 0)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("zirve-rec-\(Int(Date().timeIntervalSince1970)).m4a")
+        let settings: [String: Any] = [AVFormatIDKey: kAudioFormatMPEG4AAC, AVSampleRateKey: fmt.sampleRate, AVNumberOfChannelsKey: 1, AVEncoderBitRateKey: 48000]
+        guard let file = try? AVAudioFile(forWriting: url, settings: settings, commonFormat: .pcmFormatFloat32, interleaved: false) else { rjs(["status": "error", "text": "Səs faylı yaradılmadı."]); return }
+        recFile = file; recURL = url; recText = ""
+        var req: SFSpeechAudioBufferRecognitionRequest? = nil
+        if transcribe, let r = recognizer, r.isAvailable {
+            let q = SFSpeechAudioBufferRecognitionRequest(); q.shouldReportPartialResults = true
+            if r.supportsOnDeviceRecognition { q.requiresOnDeviceRecognition = true }
+            req = q; recReq = q
+            recTask = r.recognitionTask(with: q) { result, _ in if let t = result?.bestTranscription.formattedString { self.recText = t } }
+        }
+        let mono = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: fmt.sampleRate, channels: 1, interleaved: false)!
+        input.removeTap(onBus: 0)
+        input.installTap(onBus: 0, bufferSize: 2048, format: fmt) { buf, _ in
+            req?.append(buf)
+            if fmt.channelCount == 1 { try? file.write(from: buf); return }
+            if let m = AVAudioPCMBuffer(pcmFormat: mono, frameCapacity: buf.frameLength), let src = buf.floatChannelData, let dst = m.floatChannelData {
+                m.frameLength = buf.frameLength
+                for i in 0..<Int(buf.frameLength) { dst[0][i] = src[0][i] }
+                try? file.write(from: m)
+            }
+        }
+        audioEngine.prepare()
+        do { try audioEngine.start() } catch { rjs(["status": "error", "text": "Mikrofon açılmadı."]); return }
+        recording = true
+        rjs(["status": "recording", "transcribe": req != nil])
+    }
+    func recStop() {
+        guard recording else { return }
+        recording = false
+        if audioEngine.isRunning { audioEngine.stop(); audioEngine.inputNode.removeTap(onBus: 0) }
+        recReq?.endAudio()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            self.recTask?.cancel(); self.recTask = nil; self.recReq = nil
+            self.recFile = nil
+            guard let url = self.recURL, let data = try? Data(contentsOf: url) else { self.rjs(["status": "error", "text": "Yazı oxunmadı."]); return }
+            try? FileManager.default.removeItem(at: url)
+            self.rjs(["status": "done", "mime": "audio/mp4", "data": data.base64EncodedString(), "text": self.recText])
+        }
+    }
+    func rjs(_ obj: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj), let s = String(data: data, encoding: .utf8) else { return }
+        DispatchQueue.main.async { self.webView.evaluateJavaScript("window.__rec&&window.__rec(\(s))", completionHandler: nil) }
+    }
+
+    // <input type=file> (idxal) üçün fayl seçmə pəncərəsi
+    func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true; panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.beginSheetModal(for: window) { r in completionHandler(r == .OK ? panel.urls : nil) }
     }
 
     func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
