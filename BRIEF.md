@@ -88,3 +88,10 @@ EXAMS = { 1: { level:"A2", after:20, part:1, pass:75, mins:40, title:"", intro:"
 8. **Heç bir faylı silmə, `index.html`-ə toxunma.** Yalnız öz faylını yaz.
 9. **Yazandan sonra `node --check <fayl>` ilə sintaksisi yoxla.**
 10. İş bitəndə qısa hesabat: nə yazdın, neçə ədəd, hansı nömrələr.
+
+## Yeni sistem (v2) — 2026-10-06
+- `S.v2 = {active, arm, start, newPerDay, mode, target}`. Keçid bir dəfəlikdir: `arm` = keçid anındakı addım (Fuad üçün `1-14`); o `markDone` olanda `v2Activate()`. Əvvəl `snapshot('pre-v2-…')` (localStorage + `~/Library/Application Support/Zirve/snapshots/`).
+- Yeni məlumat: `S.gram`, `S.gwrite`, `S.writing[]`, `S.wdraft`, `S.speaking[]` (səslər IndexedDB `zirve-rec`), `S.srsSt` (tanıma r / aktiv a), `S.daylog`.
+- Məzmun faylları: `grammar.js` (GRAM: 9 ready + 9 planned), `tasks.js` (WRITING 18, SPEAKING 14, meyarlar), `plan.js` (PLAN 22 həftə, PLAN_DAY). Mənbələr: `SOURCES.md`.
+- Bacarıqlar bölməsi (`#v-skills`): Bu gün · Qrammatika · Writing · Speaking · Plan · Hesabat. İrəliləyiş → Ehtiyat nüsxə (ixrac/idxal).
+- Mac: `rec-start`/`rec-stop` (m4a + cihazda transcript), `snapshot`, `export` (Masaüstü), fayl seçmə pəncərəsi.
