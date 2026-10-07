@@ -944,11 +944,11 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
-  if(S.v2)return;
+  if(S.v2){if(S.v2.newPerDay===18&&!S.v2.np40){S.v2.newPerDay=40;S.v2.np40=true;persist();}return;}
   // keçid nöqtəsi: hazırkı addım; o bitəndə yeni sistem bir dəfə aktivləşir
   const arm=ukey(S.cursor.p,S.cursor.u);
   snapshot('pre-v2-'+today());
-  S.v2={active:false,arm,armedAt:new Date().toISOString(),newPerDay:18,mode:'3h',target:{band:6.5,date:''}};
+  S.v2={active:false,arm,armedAt:new Date().toISOString(),newPerDay:40,mode:'3h',target:{band:6.5,date:''}};
   if(S.done.includes(arm))S.v2.active=true,S.v2.activatedAt=new Date().toISOString(),S.v2.start=today();
   persist();
 }
@@ -2065,7 +2065,7 @@ function speakDone(id){return (S.speaking||[]).some(x=>x.task===id);}
 function curLessonText(){const c=S.cursor;const p=P(c.p);if(p.kind!=='vocab')return null;const ls=unitLessons(c.u);return {p:c.p,u:c.u,label:unitTitle(p,c.u).t};}
 function todayPlan(){
   const wk=planWeek(),W=PLAN[wk-1],mode=S.v2.mode||'3h',slots=PLAN_DAY[mode];const L=dayLog();
-  const due=srsDue().length,newN=S.v2.newPerDay||18;
+  const due=srsDue().length,newN=S.v2.newPerDay||40;
   const g=nextGram(wk);const dayIdx=(dayDiff(S.v2.start,today())%7);
   const wtask=WRITING.find(t=>(W.write||[]).includes(t.id)&&!writeDone(t.id))||WRITING.find(t=>(W.write||[]).includes(t.id));
   const stask=SPEAKING.find(t=>(W.speak||[]).includes(t.id)&&!speakDone(t.id))||SPEAKING.find(t=>(W.speak||[]).includes(t.id));
@@ -2282,7 +2282,7 @@ function spOpen(id,custom){
 function skPlan(){
   const wk=planWeek(),B=$('#skBody');const months=['','1-ci ay: A2 boşluqları, gündəlik ünsiyyət','2-ci ay: B1 bacarıqları','3-cü ay: B1 → B2, IELTS tapşırıq növləri','4-cü ay: IELTS bölmələri üzrə məşq','5-ci ay: tam sınaqlar və səhv analizi'];
   B.innerHTML=`<div class="card"><div class="muted" style="font-size:.88rem">Plan ${new Date(S.v2.start).toLocaleDateString('az-AZ')} tarixindən sayılır. Pedaqoji təklifdir: təqvim keçməsi səviyyəni avtomatik artırmır, nəticəyə görə tempi dəyişə bilərsən. CEFR ilə IELTS arasında dəqiq bərabərlik yoxdur (ielts.org).</div>
-  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><span class="muted">Gündə yeni söz:</span>${[10,15,18,20].map(n=>`<button class="btn sm${(S.v2.newPerDay||18)===n?' primary':''}" data-np="${n}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Hədəf tarix:</span><input type="date" id="tgDate" value="${esc(S.v2.target.date||'')}" style="font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)"></div></div>`+
+  <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><span class="muted">Gündə yeni söz:</span>${[20,25,30,40].map(n=>`<button class="btn sm${(S.v2.newPerDay||40)===n?' primary':''}" data-np="${n}">${n}</button>`).join('')}<span class="muted" style="margin-left:10px">Hədəf tarix:</span><input type="date" id="tgDate" value="${esc(S.v2.target.date||'')}" style="font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink)"></div></div>`+
   [1,2,3,4,5].map(m=>`<div class="gl-h">${months[m]}</div>`+PLAN.filter(w=>w.m===m).map(w=>`<div class="card" style="margin-bottom:8px;${w.w===wk?'border-color:var(--accent);border-width:2px':''}"><div class="row" style="justify-content:space-between"><b>Həftə ${w.w}${w.w===wk?' · indi':''}</b><span class="muted" style="font-size:.8rem">~${(S.v2.mode==='90m'?9:18)} saat</span></div><div style="margin:4px 0">${esc(w.goal)}</div>
     <div class="muted" style="font-size:.85rem;line-height:1.6">Qrammatika: ${w.gram.map(id=>{const g=GRAM.find(x=>x.id===id);return g?esc(g.title)+(g.status==='ready'?'':' (hazırlanır)'):''}).join(', ')||'təkrar'}<br>Listening: ${esc(w.listen)}<br>Reading: ${esc(w.read)}<br>Speaking: ${w.speak.map(id=>esc((SPEAKING.find(x=>x.id===id)||{}).title||id)).join(', ')||'—'} · Writing: ${w.write.map(id=>esc((WRITING.find(x=>x.id===id)||{}).title||id)).join(', ')||'—'}<br>Yoxlama: ${esc(w.check)}</div></div>`).join('')).join('');
   B.querySelectorAll('[data-np]').forEach(b=>b.addEventListener('click',()=>{S.v2.newPerDay=+b.dataset.np;save();skPlan();toast('Gündə '+b.dataset.np+' yeni söz');}));

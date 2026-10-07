@@ -1,6 +1,6 @@
 // Zirvə — 22 həftəlik plan (keçid tarixindən sayılır). Pedaqoji təklifdir, nəticə zəmanəti deyil.
 // Mərhələlər CEFR can-do məntiqinə əsaslanır (Council of Europe, CEFR Companion Volume). Təqvim keçdiyi üçün səviyyə avtomatik artmır.
-// Gün: 6 əsas gün + 1 yüngül təkrar günü. 3 saatlıq gün: söz/təkrar 30 · qrammatika 30 · listening 45 · reading 30 · speaking+writing 45.
+// Gün: 6 əsas gün + 1 yüngül təkrar günü. Yeni söz: gündə 40 (Fuad-ın seçimi; Plan bölməsində 20/25/30/40). 3 saatlıq gün: söz/təkrar 30 · qrammatika 30 · listening 45 · reading 30 · speaking+writing 45.
 // Resurs açarları: gram=GRAM id, write=WRITING id, speak=SPEAKING id, listen/read — tətbiqdəki hazır materiallar.
 const PLAN_DAY = {
   "3h":  [["Söz və təkrar",30],["Qrammatika",30],["Listening",45],["Reading",30],["Speaking / Writing",45]],
