@@ -320,6 +320,7 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 .srs-card b{font-family:var(--display);font-size:1.05rem}
 .srs-card .lv{display:flex;gap:10px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin-top:4px}
 .srs-card .lv span b{font-size:.85rem;color:var(--ink)}
+.tile.hardt{background:linear-gradient(135deg,color-mix(in srgb,var(--bad) 14%,var(--surface)),var(--surface));border-color:var(--bad);border-width:2px}
 .tile.big{background:linear-gradient(135deg,color-mix(in srgb,var(--warm) 20%,var(--surface)),var(--surface));border-color:var(--warm);border-width:2px}
 .tile.big .n{color:var(--warm-ink)}
 .bq-type{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 10px;border-radius:999px;background:var(--warm-soft);color:var(--warm-ink);margin-bottom:6px}
@@ -783,6 +784,7 @@ const pickWrap=(a,n)=>{if(!a.length)return [];let out=[];while(out.length<n)out=
 const ICO=id=>`<svg><use href="#${id}"/></svg>`;
 const NATIVE=window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.native;
 const HAS_AUDIO=!!NATIVE||(location.protocol==='https:'&&!location.hostname.endsWith('claude.ai'))||location.hostname==='localhost';
+const HARD_EVERY=7, HARD_PASS=80;
 const PASS=90, PER=40, REV_EVERY=3, SPK_EVERY=5, SPK_PASS=70, BIG_EVERY=10, BIG_PASS=80;
 const EXAMS_BY=(()=>{const m={};for(const k in EXAMS){const e=EXAMS[k];if(e.after)m[e.part+'-'+e.after]=+k;}return m;})();
 const SPEAKS=(typeof SPEAK!=='undefined')?SPEAK:{};
@@ -807,12 +809,12 @@ function bounds(p){ // hər dərsin [start,end) aralığı
 }
 const lessonCount=p=>p.kind==='vocab'?bounds(p).length:p.syllabus.length;
 function rangeOf(p,a,b){const B=bounds(p);return [B[a-1][0],B[Math.min(b,B.length)-1][1]];}
-function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});if(p.kind==='vocab'&&n%BIG_EVERY===0)out.push({k:'b',n:n/BIG_EVERY});const ex=EXAMS_BY[p.id+'-'+n];if(ex)out.push({k:'e',n:ex});}return out;}
+function units(p){const out=[];for(let n=1;n<=lessonCount(p);n++){out.push({k:'l',n});if(p.kind==='vocab'&&n%REV_EVERY===0)out.push({k:'r',n:n/REV_EVERY});if(p.kind==='vocab'&&n%SPK_EVERY===0)out.push({k:'s',n:n/SPK_EVERY});if(p.kind==='vocab'&&n%BIG_EVERY===0)out.push({k:'b',n:n/BIG_EVERY});if(p.id===1&&n%HARD_EVERY===0&&n>=21)out.push({k:'h',n:n/HARD_EVERY});const ex=EXAMS_BY[p.id+'-'+n];if(ex)out.push({k:'e',n:ex});}return out;}
 const ukey=(pid,u)=>pid+'-'+(u.k==='l'?'':u.k)+u.n;
 const uEq=(a,b)=>a&&b&&a.k===b.k&&a.n===b.n;
 const uIndex=(p,u)=>units(p).findIndex(x=>uEq(x,u));
-function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];if(u.k==='e'){const a=EXAMS[u.n];return [1,a.after];}if(u.k==='b')return [(u.n-1)*BIG_EVERY+1,u.n*BIG_EVERY];return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
-const unitWords=(p,u)=>{const [a,b]=unitLessons(u);const [x,y]=rangeOf(p,a,b);return p.words.slice(x,y);};
+function unitLessons(u){if(u.k==='l')return [u.n,u.n];if(u.k==='h')return [u.n*HARD_EVERY-HARD_EVERY+1,u.n*HARD_EVERY];if(u.k==='r')return [(u.n-1)*REV_EVERY+1,u.n*REV_EVERY];if(u.k==='e'){const a=EXAMS[u.n];return [1,a.after];}if(u.k==='b')return [(u.n-1)*BIG_EVERY+1,u.n*BIG_EVERY];return [(u.n-1)*SPK_EVERY+1,u.n*SPK_EVERY];}
+const unitWords=(p,u)=>{if(u.k==='h')return hardWords();const [a,b]=unitLessons(u);const [x,y]=rangeOf(p,a,b);return p.words.slice(x,y);};
 const unitText=(p,u)=>u.k==='l'?(p.texts||{})[u.n]:u.k==='r'?(p.reviews||{})[u.n]:undefined;
 const unitSpeak=(p,u)=>(u.k==='s'&&p.id===1)?SPEAKS[u.n]:undefined;
 const unitExam=u=>u.k==='e'?EXAMS[u.n]:undefined;
@@ -823,6 +825,7 @@ function unitTitle(p,u){
     const [la,lb]=unitLessons(u);const cnt=unitWords(p,u).length;
     if(u.k==='r')return {t:'Təkrar '+la+'–'+lb,s:'dərs '+la+'–'+lb+' · '+cnt+' söz'};
     if(u.k==='s')return {t:'Danışıq '+la+'–'+lb,s:'20 dəq · dərs '+la+'–'+lb+'-in cümlələri'};
+    if(u.k==='h')return {t:'Çətin sözlər · '+la+'–'+lb,s:hardWords().length+' söz · yazmalı, əzbərləmə'};
     if(u.k==='b')return {t:'Ümumi təkrar '+la+'–'+lb,s:cnt+' söz'+(LISTEN[u.n]?' · 5 dəq dinləmə':'')+' · '+(LISTEN[u.n]?7:6)+' növ'};
     const [x,y]=rangeOf(p,u.n,u.n);return {t:'Dərs '+u.n,s:'söz '+(x+1+p.base)+'–'+(y+p.base)+' · '+cnt+' söz'};
   }
@@ -944,7 +947,8 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
-  if(S.v2){if(!S.v2.np60){S.v2.newPerDay=60;S.v2.mode='3h';S.v2.np60=true;persist();}return;}   // Fuad: maksimum intensivlik (2026-10-07)
+  if(S.v2){if(!S.v2.hardCut1&&S.hard){const keep=new Set(['remain','more','vote','teacher','feel','allow','government','general','likely','whether','talk','over','difficult','will','wait','home','cause','nothing']);snapshot('pre-hardcut-'+today());Object.keys(S.hard).forEach(k=>{if(!keep.has(k))delete S.hard[k];});S.v2.hardCut1=true;persist();}
+  if(!S.v2.np60){S.v2.newPerDay=60;S.v2.mode='3h';S.v2.np60=true;persist();}return;}   // Fuad: maksimum intensivlik (2026-10-07)
   // keçid nöqtəsi: hazırkı addım; o bitəndə yeni sistem bir dəfə aktivləşir
   const arm=ukey(S.cursor.p,S.cursor.u);
   snapshot('pre-v2-'+today());
@@ -1036,7 +1040,7 @@ function renderGrid(){
   const g=$('#grid');g.innerHTML='';const frag=document.createDocumentFragment();
   units(p).forEach(u=>{
     const lt=unitTitle(p,u),sc=lastScore(id,u),ok=hasContent(p,u),cur=S.cursor.p===id&&uEq(S.cursor.u,u),unl=unitUnlocked(id,u),done=isDone(id,u);
-    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':u.k==='b'?' big':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
+    const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':u.k==='b'?' big':u.k==='h'?' hardt':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
     t.innerHTML=`<div class="n">${esc(lt.t)}</div><div class="rg">${esc(lt.s)}</div><div class="sc"><i style="width:${sc??0}%"></i></div>`+(sc!=null?`<span class="badge num">${sc}%</span>`:(unl?'':`<span class="badge lkb">${ICO('i-lock')}</span>`))+(unitText(p,u)?'<span class="txt">📖</span>':'')+(ok?'':'<span class="txt">hazırlanır</span>');
     t.addEventListener('click',()=>{if(!unl&&u.k!=='e'){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
     frag.appendChild(t);
@@ -1076,6 +1080,7 @@ $('#wOrder').addEventListener('click',()=>{WT.shuffled=false;$('#wOrder').hidden
 function openUnit(pid,u,tab){
   const p=P(pid);if(!u)return;
   if(!unitUnlocked(pid,u)&&u.k!=='e'){toast(!partUnlocked(pid)?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}
+  if(u.k==='h'){hardReviewStart(pid,u);return;}
   if(view==='lesson'&&(pid!==curPart||!uEq(u,curU))){plStop();readReset();}
   curPart=pid;curU=u;
   const lt=unitTitle(p,u),unl=unitUnlocked(pid,u),ok=hasContent(p,u),tx=unitText(p,u),done=isDone(pid,u),sc=lastScore(pid,u);
@@ -1584,6 +1589,9 @@ function srsBackfill(){
   if(queue.length)save();
 }
 function srsDue(){const t=today();return allW().filter(w=>S.srs[w[1]]&&S.srs[w[1]].due<=t);}
+const SRS_DAY=100;   // Fuad: gündə ən çox 100 təkrar, artığı sabaha keçir
+function srsQuota(){const d=S.srsDay;return Math.max(0,SRS_DAY-(d&&d.d===today()?d.n:0));}
+function srsDueToday(){return Math.min(srsDue().length,srsQuota());}
 function srsLevels(){const c={yeni:0,oyrenilir:0,mohkem:0,ezber:0};Object.values(S.srs).forEach(x=>{if(x.reps===0)c.yeni++;else if(x.iv<7)c.oyrenilir++;else if(x.iv<30)c.mohkem++;else c.ezber++;});return c;}
 function srsGrade(w,ok,easy){
   const x=S.srs[w[1]]||{iv:0,reps:0,lapses:0,ef:2.5};
@@ -1595,15 +1603,18 @@ function srsGrade(w,ok,easy){
 function renderSrsCard(){
   const box=$('#srsCard');const total=Object.keys(S.srs).length;
   if(!total){box.hidden=true;return;}box.hidden=false;
-  const due=srsDue().length,lv=srsLevels();
+  const due=srsDueToday(),lv=srsLevels(),done0=SRS_DAY-srsQuota();
   box.className='srs-card'+(due?'':' done');
-  box.innerHTML=`<div><b>${due?'Gündəlik təkrar · '+due+' söz vaxtı çatıb':'Bu günün təkrarı bitib ✓'}</b><div class="lv"><span>yeni <b class="num">${lv.yeni}</b></span><span>öyrənilir <b class="num">${lv.oyrenilir}</b></span><span>möhkəm <b class="num">${lv.mohkem}</b></span><span>əzbər <b class="num">${lv.ezber}</b></span></div></div>${due?`<button class="btn primary" id="srsGo">Təkrara başla${due>SRS_SESSION?' ('+SRS_SESSION+')':''}</button>`:''}`;
+  box.innerHTML=`<div><b>${due?'Gündəlik təkrar · '+due+' söz (bu gün '+done0+' / '+SRS_DAY+')':'Bu günün təkrarı bitib ✓ ('+done0+' / '+SRS_DAY+')'}</b><div class="lv"><span>yeni <b class="num">${lv.yeni}</b></span><span>öyrənilir <b class="num">${lv.oyrenilir}</b></span><span>möhkəm <b class="num">${lv.mohkem}</b></span><span>əzbər <b class="num">${lv.ezber}</b></span></div></div>${due?`<button class="btn primary" id="srsGo">Təkrara başla${due>SRS_SESSION?' ('+SRS_SESSION+')':''}</button>`:''}`;
   const g=$('#srsGo');if(g)g.addEventListener('click',srsStart);
 }
 const SR={q:[],i:0,right:0,wrong:[],lock:false};
 function srsStart(){
-  const due=shuffle(srsDue()).slice(0,SRS_SESSION);
+  const q0=srsQuota();if(!q0){toast('Bu günün '+SRS_DAY+' təkrarı bitdi — qalanı sabah');return;}
+  // əvvəl çətin sözlər, sonra ən çox gecikənlər
+  const due=srsDue().sort((a,b)=>((S.hard[b[1]]?1:0)-(S.hard[a[1]]?1:0))||S.srs[a[1]].due.localeCompare(S.srs[b[1]].due)).slice(0,Math.min(SRS_SESSION,q0));
   if(!due.length){toast('Bu gün təkrar yoxdur');return;}
+  SR.custom=null;
   const pool=allW().filter(w=>S.srs[w[1]]);const pl=pool.length>=40?pool:W.slice(0,200);
   const v2=S.v2&&S.v2.active,used=new Set();
   // yeni sistemdə tapşırıqlar qarışıqdır: tanıma (mc) + aktiv xatırlama (yaz, səsdən yaz, cümlədə boşluq)
@@ -1611,7 +1622,7 @@ function srsStart(){
     const lap=(S.srs[w[1]]||{}).lapses>0;
     if(r<(lap?6:4))return {...b,t:'mc'};if(r<12)return {w,t:'recall'};if(r<16)return {w,t:'audio'};
     const sn=findSentence(w,999,used);return sn?{w,t:'gap',sn}:{w,t:'recall'};});
-  SR.i=0;SR.right=0;SR.wrong=[];SR.first=new Set();SR.streak=0;SR.best=0;
+  SR.q=shuffle(SR.q);SR.i=0;SR.right=0;SR.wrong=[];SR.first=new Set();SR.streak=0;SR.best=0;
   $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
 }
 const SRS_T={mc:'Tanıma',recall:'Yadda saxlama · yaz',audio:'Dinlə və yaz',gap:'Cümlədə boşluq'};
@@ -1644,8 +1655,10 @@ function srsResult(q,ok){
   // yalnız ilk cəhd SRS-ə yazılır; səhvdə eyni sessiyada gecikdirilmiş yenidən cəhd
   clearInterval(SR.tk);const fast=ok&&(Date.now()-SR.t0)<=SR.lim&&q.t!=='mc';
   if(ok){SR.streak++;SR.best=Math.max(SR.best,SR.streak);}else SR.streak=0;
+  if(!q.retry&&!SR.custom){const d=S.srsDay&&S.srsDay.d===today()?S.srsDay:(S.srsDay={d:today(),n:0});d.n++;}
+  if(SR.custom&&!q.retry){(SR.custom.res[q.w[1]]=SR.custom.res[q.w[1]]||[]).push(ok);}
   if(!q.retry){srsGrade(q.w,ok,fast);srsStat(q.w,q.t==='mc'?'r':'a',ok);if(ok)SR.right++;else SR.wrong.push(q.w);}
-  if(!ok){const pos=Math.min(SR.q.length,SR.i+4);SR.q.splice(pos,0,{w:q.w,t:q.t==='mc'?'recall':q.t,sn:q.sn,retry:true});}
+  if(!ok&&!q.retry){const pos=Math.min(SR.q.length,SR.i+4);SR.q.splice(pos,0,{w:q.w,t:q.t==='mc'?'recall':q.t,sn:q.sn,retry:true});}
 }
 function srsExplain(q){
   const ex=findSentence(q.w,999,new Set());
@@ -1671,14 +1684,32 @@ function srsAnswer(k){
 }
 function srsEnd(){
   save();updateRing();
-  const n=SR.q.filter(x=>!x.retry).length,pct=Math.round(SR.right/n*100),left=srsDue().length;
+  const n=SR.q.filter(x=>!x.retry).length,pct=Math.round(SR.right/n*100),left=SR.custom?0:srsDueToday();
   $('#srsRun').hidden=true;$('#srsEnd').hidden=false;
   const big=$('#srsPct');big.className='big num '+(pct>=85?'':pct>=65?'mid':'low');countUp(big,pct);
   const nFirst=SR.q.filter(x=>!x.retry).length;clearInterval(SR.tk);
   $('#srsMsg').textContent=`İlk cəhd: ${SR.right} / ${nFirst} düz · ən uzun seriya: ${SR.best}. Səhvlər sabah yenidən çıxacaq və Çətin sözlərə düşdü.`+(left?` Bu gün hələ ${left} söz qalıb.`:' Bu günün təkrarı bitdi ✓');
   $('#srsWrong').innerHTML='';SR.wrong.forEach(w=>{const sp=el('span',null,`${esc(w[1])} — ${esc(w[3])}`);sp.addEventListener('click',()=>sayWord(w));$('#srsWrong').appendChild(sp);});
   $('#srsMore').hidden=!left;
-  S.history.unshift({l:'Gündəlik təkrar',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);save();
+  S.history.unshift({l:SR.custom?SR.custom.title:'Gündəlik təkrar',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);
+  if(SR.custom){
+    // hər iki cəhddə düz cavab verilən söz «əzbərləndi» — çətin sözlərdən çıxır
+    const learned=Object.entries(SR.custom.res).filter(([,r])=>r.every(Boolean)).map(([w])=>w);
+    learned.forEach(w=>delete S.hard[w]);
+    const ok=pct>=HARD_PASS;if(ok)markDone(SR.custom.pid,SR.custom.u);
+    $('#srsMsg').textContent=`${SR.right} / ${n} düz (${pct}%). Əzbərlənib və siyahıdan çıxdı: ${learned.length} söz. Qalan çətin sözlər: ${Object.keys(S.hard).length}. `+(ok?'Keçdin ✓ növbəti addım açıldı.':'Keçid həddi '+HARD_PASS+'% — yenidən et.');
+    $('#srsMore').hidden=true;
+  }
+  save();updateRing();
+}
+function hardReviewStart(pid,u){
+  const ws=hardWords();
+  if(ws.length<4){markDone(pid,u);save();toast('Çətin söz azdır ('+ws.length+') — addım keçildi');render();return;}
+  const used=new Set(),pl=allW().slice(0,600);
+  const q=[];ws.forEach((w,i)=>{q.push({w,t:'recall'});const sn=findSentence(w,999,used);q.push(i%2&&sn?{w,t:'gap',sn}:{w,t:'audio'});});
+  SR.custom={pid,u,title:unitTitle(P(pid),u).t,res:{}};
+  SR.q=shuffle(q);SR.i=0;SR.right=0;SR.wrong=[];SR.streak=0;SR.best=0;
+  $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
 }
 $('#srsMore').addEventListener('click',srsStart);
 $('#srsHome').addEventListener('click',()=>go('home'));
@@ -2072,7 +2103,7 @@ function speakDone(id){return (S.speaking||[]).some(x=>x.task===id);}
 function curLessonText(){const c=S.cursor;const p=P(c.p);if(p.kind!=='vocab')return null;const ls=unitLessons(c.u);return {p:c.p,u:c.u,label:unitTitle(p,c.u).t};}
 function todayPlan(){
   const wk=planWeek(),W=PLAN[wk-1],mode=S.v2.mode||'3h',slots=PLAN_DAY[mode];const L=dayLog();
-  const due=srsDue().length,newN=S.v2.newPerDay||60;
+  const due=srsDueToday(),newN=S.v2.newPerDay||60;
   const g=nextGram(wk);const dayIdx=(dayDiff(S.v2.start,today())%7);
   const wtask=WRITING.find(t=>(W.write||[]).includes(t.id)&&!writeDone(t.id))||WRITING.find(t=>(W.write||[]).includes(t.id));
   const stask=SPEAKING.find(t=>(W.speak||[]).includes(t.id)&&!speakDone(t.id))||SPEAKING.find(t=>(W.speak||[]).includes(t.id));
@@ -2472,7 +2503,7 @@ if('serviceWorker' in navigator&&!NATIVE&&(location.protocol==='https:'||locatio
 
 // ---------- boot ----------
 function render(){srsBackfill();updateRing();renderHome();if(view==='home')show('home');}
-if(location.hostname==='localhost')window.__zt={S:()=>S,markDone,P,units,ukey,save,render,go:v=>go(v)};
+if(location.hostname==='localhost')window.__zt={SR,S:()=>S,markDone,P,units,ukey,save,render,go:v=>go(v)};
 function start(hot){load();if(hot&&hot.T&&hot.T.qs&&hot.T.i<hot.T.qs.length&&hot.T.u){T=hot.T;openUnit(T.p,T.u,'test');runTest();}}
 const hot=window.claude&&window.claude.hot;
 if(hot&&hot.snapshot)hot.snapshot(()=>({T:(T&&!$('#testRun').hidden)?T:null}));
