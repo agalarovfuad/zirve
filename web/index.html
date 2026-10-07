@@ -695,7 +695,7 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
     <section id="v-srs" hidden>
       <div class="crumbs"><button data-go="home">Dərslər</button><span>›</span><span>Gündəlik təkrar</span></div>
       <div id="srsRun">
-        <div class="test-head"><div class="muted num" id="srsPos">1 / 1</div><div class="muted" style="font-size:.85rem" id="srsInfo"></div></div>
+        <div class="test-head"><div class="muted num" id="srsPos">1 / 1</div><div class="num" id="srsStreak" style="font-weight:700;color:var(--warm)"></div><div class="muted" style="font-size:.85rem" id="srsInfo"></div></div><div class="prog" style="height:4px;margin-top:4px"><i id="srsTime" style="width:100%;background:var(--warm);transition:width .2s linear"></i></div>
         <div class="prog"><i id="srsBar" style="width:0%"></i></div>
         <div class="card qcard" id="srsQ">
           <div class="prompt" id="srsPrompt"></div>
@@ -1585,9 +1585,9 @@ function srsBackfill(){
 }
 function srsDue(){const t=today();return allW().filter(w=>S.srs[w[1]]&&S.srs[w[1]].due<=t);}
 function srsLevels(){const c={yeni:0,oyrenilir:0,mohkem:0,ezber:0};Object.values(S.srs).forEach(x=>{if(x.reps===0)c.yeni++;else if(x.iv<7)c.oyrenilir++;else if(x.iv<30)c.mohkem++;else c.ezber++;});return c;}
-function srsGrade(w,ok){
+function srsGrade(w,ok,easy){
   const x=S.srs[w[1]]||{iv:0,reps:0,lapses:0,ef:2.5};
-  if(ok){x.reps++;x.iv=x.reps===1?1:x.reps===2?3:Math.round(x.iv*x.ef);x.ef=Math.min(2.8,x.ef+0.05);}
+  if(ok){x.reps++;x.iv=x.reps===1?(easy?3:1):x.reps===2?(easy?6:3):Math.round(x.iv*x.ef*(easy?1.3:1));x.ef=Math.min(easy?3.0:2.8,x.ef+(easy?0.1:0.05));}
   else{x.lapses++;x.reps=0;x.iv=0;x.ef=Math.max(1.3,x.ef-0.2);const l=lessonOfWord(w);const h=S.hard[w[1]]||{p:l.p,l:l.n,n:0};h.n=(h.n||0)+1;S.hard[w[1]]=h;}
   x.due=addDays(ok?Math.max(1,x.iv):1);
   S.srs[w[1]]=x;
@@ -1608,9 +1608,10 @@ function srsStart(){
   const v2=S.v2&&S.v2.active,used=new Set();
   // yeni sistemdə tapşırıqlar qarışıqdır: tanıma (mc) + aktiv xatırlama (yaz, səsdən yaz, cümlədə boşluq)
   SR.q=due.map((w,i)=>{const b=buildQ(w,pl);if(!v2)return {...b,t:'mc'};const r=(i*7)%20;
-    if(r<9)return {...b,t:'mc'};if(r<15)return {w,t:'recall'};if(r<18)return {w,t:'audio'};
+    const lap=(S.srs[w[1]]||{}).lapses>0;
+    if(r<(lap?6:4))return {...b,t:'mc'};if(r<12)return {w,t:'recall'};if(r<16)return {w,t:'audio'};
     const sn=findSentence(w,999,used);return sn?{w,t:'gap',sn}:{w,t:'recall'};});
-  SR.i=0;SR.right=0;SR.wrong=[];SR.first=new Set();
+  SR.i=0;SR.right=0;SR.wrong=[];SR.first=new Set();SR.streak=0;SR.best=0;
   $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
 }
 const SRS_T={mc:'Tanıma',recall:'Yadda saxlama · yaz',audio:'Dinlə və yaz',gap:'Cümlədə boşluq'};
@@ -1620,12 +1621,16 @@ function srsDraw(){
   $('#srsInfo').textContent=(q.retry?'yenidən cəhd · ':'')+SRS_T[q.t]+' · '+(x&&x.reps?'son aralıq: '+x.iv+' gün':'ilk təkrar');
   const card=$('#srsQ');card.classList.remove('qcard');void card.offsetWidth;card.classList.add('qcard');
   const o=$('#srsOpts');o.innerHTML='';$('#srsFb').innerHTML='';SR.lock=false;
+  SR.t0=Date.now();SR.lim=q.t==='mc'?5000:12000;clearInterval(SR.tk);$('#srsTime').style.width='100%';
+  SR.tk=setInterval(()=>{const f=Math.max(0,1-(Date.now()-SR.t0)/SR.lim);$('#srsTime').style.width=(f*100)+'%';if(f<=0)clearInterval(SR.tk);},200);
+  $('#srsStreak').textContent=SR.streak>=3?'🔥 '+SR.streak:'';
   if(q.t==='mc'){
     $('#srsPrompt').innerHTML=`<span>${esc(q.w[3])}</span><small>İngiliscəsi hansıdır?</small>`;
     q.opts.forEach((w,k)=>{const b=el('button','opt');b.innerHTML=`<kbd>${k+1}</kbd><span>${esc(w[1])}</span>`;b.addEventListener('click',()=>srsAnswer(k));o.appendChild(b);});
     return;
   }
-  if(q.t==='recall')$('#srsPrompt').innerHTML=`<span>${esc(q.w[3])}</span><small>İngiliscə yaz · ${q.w[1].length} hərf, «${esc(q.w[1][0])}» ilə başlayır</small>`;
+  const xr=S.srs[q.w[1]]||{};const hint=!xr.reps||xr.reps<2||q.retry;
+  if(q.t==='recall')$('#srsPrompt').innerHTML=`<span>${esc(q.w[3])}</span><small>İngiliscə yaz · ${q.w[1].length} hərf${hint?`, «${esc(q.w[1][0])}» ilə başlayır`:''}</small>`;
   if(q.t==='audio')$('#srsPrompt').innerHTML=`<button class="btn" id="srsPlay">▶ Dinlə</button><small>Eşitdiyin sözü yaz</small>`;
   if(q.t==='gap')$('#srsPrompt').innerHTML=`<span style="font-size:1.1rem;font-family:var(--body);font-weight:500;line-height:1.6">${esc(q.sn.before)}<b style="color:var(--accent)">${esc(q.sn.answer[0])}${'_'.repeat(Math.max(1,q.sn.answer.length-1))}</b>${esc(q.sn.after)}</span><small>Mənası: ${esc(q.w[3])}</small>`;
   o.innerHTML=`<input class="bq-in" id="srsIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="yaz və Enter bas"><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" id="srsOk">Yoxla</button></div>`;
@@ -1637,7 +1642,9 @@ function srsDraw(){
 function srsStat(w,kind,ok){const st=S.srsSt||(S.srsSt={});const x=st[w[1]]||(st[w[1]]={r:[0,0],a:[0,0]});x[kind][ok?0:1]++;}
 function srsResult(q,ok){
   // yalnız ilk cəhd SRS-ə yazılır; səhvdə eyni sessiyada gecikdirilmiş yenidən cəhd
-  if(!q.retry){srsGrade(q.w,ok);srsStat(q.w,q.t==='mc'?'r':'a',ok);if(ok)SR.right++;else SR.wrong.push(q.w);}
+  clearInterval(SR.tk);const fast=ok&&(Date.now()-SR.t0)<=SR.lim&&q.t!=='mc';
+  if(ok){SR.streak++;SR.best=Math.max(SR.best,SR.streak);}else SR.streak=0;
+  if(!q.retry){srsGrade(q.w,ok,fast);srsStat(q.w,q.t==='mc'?'r':'a',ok);if(ok)SR.right++;else SR.wrong.push(q.w);}
   if(!ok){const pos=Math.min(SR.q.length,SR.i+4);SR.q.splice(pos,0,{w:q.w,t:q.t==='mc'?'recall':q.t,sn:q.sn,retry:true});}
 }
 function srsExplain(q){
@@ -1650,7 +1657,7 @@ function srsTyped(){
   SR.lock=true;const target=q.t==='gap'?q.sn.answer:q.w[1];const r=checkTyped(inp.value,target);
   inp.classList.add(r.ok?'ok':'no');inp.readOnly=true;
   srsResult(q,r.ok);if(S.sound!==false||q.t!=='mc')sayWord(q.w);
-  if(r.ok){$('#srsFb').innerHTML=r.exact?'<span style="color:var(--good)">Düzdür ✓</span>':`<span style="color:var(--good)">Düzdür</span> <span class="muted">— yazılışı: <b>${esc(target)}</b></span>`;setTimeout(srsNext,r.exact?600:1300);}
+  if(r.ok){$('#srsFb').innerHTML=r.exact?`<span style="color:var(--good)">Düzdür ✓</span>${(Date.now()-SR.t0)<=SR.lim?' <span class="muted">· sürətli — söz daha gec qayıdacaq</span>':''}`:`<span style="color:var(--good)">Düzdür</span> <span class="muted">— yazılışı: <b>${esc(target)}</b></span>`;setTimeout(srsNext,r.exact?600:1300);}
   else{srsExplain(q);SR.wait=true;}
 }
 function srsAnswer(k){
@@ -1667,8 +1674,8 @@ function srsEnd(){
   const n=SR.q.filter(x=>!x.retry).length,pct=Math.round(SR.right/n*100),left=srsDue().length;
   $('#srsRun').hidden=true;$('#srsEnd').hidden=false;
   const big=$('#srsPct');big.className='big num '+(pct>=85?'':pct>=65?'mid':'low');countUp(big,pct);
-  const nFirst=SR.q.filter(x=>!x.retry).length;
-  $('#srsMsg').textContent=`İlk cəhd: ${SR.right} / ${nFirst} düz. Səhvlər sabah yenidən çıxacaq və Çətin sözlərə düşdü.`+(left?` Bu gün hələ ${left} söz qalıb.`:' Bu günün təkrarı bitdi ✓');
+  const nFirst=SR.q.filter(x=>!x.retry).length;clearInterval(SR.tk);
+  $('#srsMsg').textContent=`İlk cəhd: ${SR.right} / ${nFirst} düz · ən uzun seriya: ${SR.best}. Səhvlər sabah yenidən çıxacaq və Çətin sözlərə düşdü.`+(left?` Bu gün hələ ${left} söz qalıb.`:' Bu günün təkrarı bitdi ✓');
   $('#srsWrong').innerHTML='';SR.wrong.forEach(w=>{const sp=el('span',null,`${esc(w[1])} — ${esc(w[3])}`);sp.addEventListener('click',()=>sayWord(w));$('#srsWrong').appendChild(sp);});
   $('#srsMore').hidden=!left;
   S.history.unshift({l:'Gündəlik təkrar',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);save();
