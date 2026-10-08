@@ -1633,7 +1633,7 @@ function srsStart(){
   SR.q=due.map((w,i)=>{const b=buildQ(w,pl);if(!v2)return {...b,t:'mc'};const r=(i*7)%20;
     const lap=(S.srs[w[1]]||{}).lapses>0;
     if(r<(lap?6:4))return {...b,t:'mc'};if(r<12)return {w,t:'recall'};if(r<16)return {w,t:'audio'};
-    const sn=findSentence(w,999,used);return sn?{w,t:'gap',sn}:{w,t:'recall'};});
+    const sn=findSentence(w,learnedUpto(),used);return sn?{w,t:'gap',sn}:{w,t:'recall'};});
   SR.q=shuffle(SR.q);SR.i=0;SR.right=0;SR.wrong=[];SR.first=new Set();SR.streak=0;SR.best=0;
   $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
 }
@@ -1673,7 +1673,7 @@ function srsResult(q,ok){
   if(!ok&&!q.retry){const pos=Math.min(SR.q.length,SR.i+4);SR.q.splice(pos,0,{w:q.w,t:q.t==='mc'?'recall':q.t,sn:q.sn,retry:true});}
 }
 function srsExplain(q){
-  const ex=findSentence(q.w,999,new Set());
+  const ex=findSentence(q.w,learnedUpto(),new Set());
   $('#srsFb').innerHTML=`<div style="color:var(--bad);font-weight:700">Düz cavab: ${esc(q.t==='gap'?q.sn.answer:q.w[1])} <span class="muted" style="font-weight:400">${esc(q.w[4]||'')}</span></div><div class="muted">${esc(q.w[1])} — ${esc(q.w[3])}${q.w[2]?' ('+esc(q.w[2])+')':''}</div>${ex?`<div style="margin-top:4px;font-style:italic">${esc(ex.before)}<b>${esc(ex.answer)}</b>${esc(ex.after)}</div>`:''}<div class="muted" style="font-size:.82rem;margin-top:4px">Bir az sonra bu söz yenidən soruşulacaq. Davam üçün Enter.</div>`;
 }
 function srsNext(){SR.wait=false;SR.i++;if(SR.i>=SR.q.length)srsEnd();else srsDraw();}
@@ -1718,7 +1718,7 @@ function hardReviewStart(pid,u){
   const ws=hardWords();
   if(ws.length<4){markDone(pid,u);save();toast('Çətin söz azdır ('+ws.length+') — addım keçildi');render();return;}
   const used=new Set(),pl=allW().slice(0,600);
-  const q=[];ws.forEach((w,i)=>{q.push({w,t:'recall'});const sn=findSentence(w,999,used);q.push(i%2&&sn?{w,t:'gap',sn}:{w,t:'audio'});});
+  const q=[];ws.forEach((w,i)=>{q.push({w,t:'recall'});const sn=findSentence(w,learnedUpto(),used);q.push(i%2&&sn?{w,t:'gap',sn}:{w,t:'audio'});});
   SR.custom={pid,u,title:unitTitle(P(pid),u).t,res:{}};
   SR.q=shuffle(q);SR.i=0;SR.right=0;SR.wrong=[];SR.streak=0;SR.best=0;
   $('#srsRun').hidden=false;$('#srsEnd').hidden=true;show('srs');srsDraw();
@@ -1741,9 +1741,11 @@ function sentencePool(){
   for(const k in SPEAK)SPEAK[k].items.forEach(x=>add(x,(SPEAK[k].lessons||[0,+k*5])[1]));
   return SENTS;
 }
+// yalnız bitirilmiş dərslərin mətnlərindən cümlə — keçilməmiş söz çıxmasın
+function learnedUpto(){let m=0;S.done.forEach(k=>{const r=k.match(/^1-(\d+)$/);if(r)m=Math.max(m,+r[1]);});return m;}
 function findSentence(w,upto,used){
   const re=new RegExp('\\b'+w[1].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
-  const c=sentencePool().filter(x=>x.upto<=upto+2&&re.test(x.t)&&!used.has(x.t));
+  const c=sentencePool().filter(x=>x.upto<=upto&&re.test(x.t)&&!used.has(x.t));
   if(!c.length)return null;const pick=c[Math.floor(Math.random()*c.length)];used.add(pick.t);
   const m=pick.t.match(re);return {before:pick.t.slice(0,m.index),after:pick.t.slice(m.index+m[0].length),answer:m[0]};
 }
