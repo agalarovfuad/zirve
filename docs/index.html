@@ -344,6 +344,11 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 .sk-meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 .sk-meta span{font-size:.75rem;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-soft-ink);font-weight:600}
 .g-expl p{margin:0 0 10px;line-height:1.7}
+.g-expl h4{margin:16px 0 6px;font-size:1rem;color:var(--accent-soft-ink)}
+.g-expl table{border-collapse:collapse;margin:6px 0 12px;font-size:.92rem;width:100%}
+.g-expl th,.g-expl td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.g-expl th{background:var(--accent-soft)}
+.g-expl ul{margin:4px 0 10px 18px;line-height:1.7}
 .g-ex{display:grid;gap:6px}.g-ex div{cursor:pointer}
 .g-err{width:100%;border-collapse:collapse;font-size:.92rem}.g-err td{padding:8px 6px;border-top:1px solid var(--line);vertical-align:top}
 .g-err .bad{color:var(--bad);text-decoration:line-through}.g-err .good{color:var(--good);font-weight:600}
@@ -764,18 +769,19 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1791437455"></script>
-<script src="texts.js?v=1791437455"></script>
-<script src="syllabus.js?v=1791437455"></script>
-<script src="speak.js?v=1791437455"></script>
-<script src="lemma.js?v=1791437455"></script>
-<script src="exams.js?v=1791437455"></script>
-<script src="listen.js?v=1791437455"></script>
+<script src="words.js?v=1791437828"></script>
+<script src="texts.js?v=1791437828"></script>
+<script src="syllabus.js?v=1791437828"></script>
+<script src="speak.js?v=1791437828"></script>
+<script src="lemma.js?v=1791437828"></script>
+<script src="exams.js?v=1791437828"></script>
+<script src="listen.js?v=1791437828"></script>
 <script src="listen-times.js"></script>
-<script src="teacher.js?v=1791437455"></script>
-<script src="grammar.js?v=1791437455"></script>
-<script src="tasks.js?v=1791437455"></script>
-<script src="plan.js?v=1791437455"></script>
+<script src="teacher.js?v=1791437828"></script>
+<script src="grammar.js?v=1791437828"></script>
+<script src="grammar-expl.js"></script>
+<script src="tasks.js?v=1791437828"></script>
+<script src="plan.js?v=1791437828"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -2177,7 +2183,7 @@ function gramOpen(id){
   const g=GRAM.find(x=>x.id===id),B=$('#skBody'),st=gramState(id)||{};
   B.innerHTML=`<button class="btn sm ghost" id="gBack">← Mövzular</button>
   <div class="card" style="margin-top:10px"><div class="sk-meta"><span>${g.level}</span><span>~${g.mins} dəq</span><span>həftə ${g.week}</span></div><h3 style="margin:4px 0 6px">${esc(g.title)}</h3><div class="muted" style="margin-bottom:12px"><b>Məqsəd:</b> ${esc(g.goal)}</div>
-  <div class="g-expl">${g.expl.map(x=>'<p>'+x+'</p>').join('')}</div></div>
+  <div class="g-expl">${g.expl.map(x=>/^<(h4|table|ul|ol|div)/.test(x)?x:'<p>'+x+'</p>').join('')}</div></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow" style="margin-bottom:8px">Nümunələr (bas — dinlə)</div><div class="g-ex">${g.examples.map(x=>`<div data-say="${esc(x[0])}"><b>${esc(x[0])}</b> <span class="muted">— ${esc(x[1])}</span></div>`).join('')}</div></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow" style="margin-bottom:8px">Azərbaycanca danışanların tipik səhvləri</div><table class="g-err">${g.errors.map(x=>`<tr><td class="bad">${esc(x[0])}</td><td class="good">${esc(x[1])}</td><td class="muted">${esc(x[2])}</td></tr>`).join('')}</table></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow">Məşq</div><div class="muted" style="font-size:.88rem;margin:4px 0 10px">${g.mc.length} seçimli (tanıma) + ${g.type.length+g.fix.length} yazmalı (aktiv). Tamamlanma: aktiv hissədə 70%+ və qısa yazı. Səhvdə izah göstərilir.${st.act?` Son: tanıma ${st.mc.last}%, aktiv ${st.act.last}% (ilk cəhd ${st.act.first}%).`:''}</div><button class="btn primary" id="gRun">Məşqə başla</button></div>
