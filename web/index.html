@@ -947,7 +947,8 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
-  if(S.v2){if(!S.v2.hardCut1&&S.hard){const keep=new Set(['remain','more','vote','teacher','feel','allow','government','general','likely','whether','talk','over','difficult','will','wait','home','cause','nothing']);snapshot('pre-hardcut-'+today());Object.keys(S.hard).forEach(k=>{if(!keep.has(k))delete S.hard[k];});S.v2.hardCut1=true;persist();}
+  if(S.v2){if(!S.v2.pday){S.v2.pday=1;S.pdone={1:{vocab:true},2:{vocab:!!((S.daylog||{})['2026-10-08']||{}).vocab}};persist();}
+  if(!S.v2.hardCut1&&S.hard){const keep=new Set(['remain','more','vote','teacher','feel','allow','government','general','likely','whether','talk','over','difficult','will','wait','home','cause','nothing']);snapshot('pre-hardcut-'+today());Object.keys(S.hard).forEach(k=>{if(!keep.has(k))delete S.hard[k];});S.v2.hardCut1=true;persist();}
   if(!S.v2.np60){S.v2.newPerDay=60;S.v2.mode='3h';S.v2.np60=true;persist();}return;}   // Fuad: maksimum intensivlik (2026-10-07)
   // keçid nöqtəsi: hazırkı addım; o bitəndə yeni sistem bir dəfə aktivləşir
   const arm=ukey(S.cursor.p,S.cursor.u);
@@ -2092,9 +2093,12 @@ const v2on=()=>!!(S.v2&&S.v2.active);
 function skStop(){clearInterval(SK2.timer);SK2.timer=null;if(SK2.rec&&SK2.rec.stop)try{SK2.rec.stop();}catch(e){}}
 $('#skTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;skStop();SK2.tab=b.dataset.t;skRender();});
 const dayDiff=(a,b)=>Math.round((new Date(b+'T12:00')-new Date(a+'T12:00'))/864e5);
-function planWeek(){if(!v2on())return null;const d=dayDiff(S.v2.start,today());return Math.min(PLAN.length,Math.max(1,Math.floor(d/7)+1));}
-function dayLog(){const L=S.daylog||(S.daylog={});return L[today()]||(L[today()]={});}
-function markDay(k){dayLog()[k]=true;save();}
+// plan günü təqvimlə yox, iş ilə irəliləyir: əvvəlki plan bitməyincə növbəti açılmır (Fuad, 2026-10-08)
+function pday(){return (S.v2&&S.v2.pday)||1;}
+function planWeek(){if(!v2on())return null;return Math.min(PLAN.length,Math.max(1,Math.floor((pday()-1)/7)+1));}
+function dayLog(){const L=S.pdone||(S.pdone={});return L[pday()]||(L[pday()]={});}
+function calLog(){const L=S.daylog||(S.daylog={});return L[today()]||(L[today()]={});}
+function markDay(k){dayLog()[k]=true;calLog()[k]=true;save();}
 function lastActive(){const L=S.daylog||{};const ks=Object.keys(L).filter(k=>Object.keys(L[k]).length).sort();return ks[ks.length-1]||null;}
 function gramState(id){return (S.gram||{})[id]||null;}
 function nextGram(wk){const W=PLAN[wk-1];const ids=(W.gram||[]).concat(GRAM.filter(g=>g.status==='ready').map(g=>g.id));return GRAM.find(g=>ids.includes(g.id)&&g.status==='ready'&&!(gramState(g.id)||{}).done)||null;}
@@ -2104,7 +2108,7 @@ function curLessonText(){const c=S.cursor;const p=P(c.p);if(p.kind!=='vocab')ret
 function todayPlan(){
   const wk=planWeek(),W=PLAN[wk-1],mode=S.v2.mode||'3h',slots=PLAN_DAY[mode];const L=dayLog();
   const due=srsDueToday(),newN=S.v2.newPerDay||60;
-  const g=nextGram(wk);const dayIdx=(dayDiff(S.v2.start,today())%7);
+  const g=nextGram(wk);const dayIdx=(pday()-1)%7;
   const wtask=WRITING.find(t=>(W.write||[]).includes(t.id)&&!writeDone(t.id))||WRITING.find(t=>(W.write||[]).includes(t.id));
   const stask=SPEAKING.find(t=>(W.speak||[]).includes(t.id)&&!speakDone(t.id))||SPEAKING.find(t=>(W.speak||[]).includes(t.id));
   const cl=curLessonText();const light=dayIdx===6;
@@ -2134,7 +2138,7 @@ function renderDayCard(){
   $('#navSkills').hidden=false;
   const P2=todayPlan(),L=dayLog(),tot=P2.items.reduce((a,x)=>a+x.m,0),done=P2.items.filter(x=>L[x.k]).length;
   const la=lastActive(),gap=la?dayDiff(la,today()):0;const ws=weakSkill();
-  c.hidden=false;c.innerHTML=`<div class="row" style="justify-content:space-between;gap:10px"><div><div class="eyebrow">Bu günün planı · Həftə ${P2.wk} / ${PLAN.length}</div><div style="font-weight:700;margin-top:4px">${done} / ${P2.items.length} hissə · ~${Math.round(tot/6)/10} saat</div></div><button class="btn primary" id="dayGo">Plana keç</button></div>
+  c.hidden=false;c.innerHTML=`<div class="row" style="justify-content:space-between;gap:10px"><div><div class="eyebrow">Plan ${pday()} · Həftə ${P2.wk} / ${PLAN.length}</div><div style="font-weight:700;margin-top:4px">${done} / ${P2.items.length} hissə · ~${Math.round(tot/6)/10} saat</div></div><button class="btn primary" id="dayGo">Plana keç</button></div>
   ${gap>=2?`<div class="notice" style="margin-top:10px">${gap} gün ara verdin — plan sıfırlanmayıb. Bu gün yüngül qayıdış et: təkrar + bir qısa tapşırıq.</div>`:''}
   <div class="muted" style="font-size:.86rem;margin-top:8px">Həftənin məqsədi: ${esc(P2.W.goal)}${ws?` · Zəif yer: <b>${esc(ws[0])}</b> (${esc(ws[1])})`:''}${P2.due>450?` · <b style="color:var(--warm)">Təkrar yığılıb (${P2.due}) — yeni sözləri azaltmaq olar</b>`:''}</div>`;
   $('#dayGo').addEventListener('click',()=>{SK2.tab='today';go('skills');});
@@ -2147,13 +2151,16 @@ function skRender(){
 }
 function skToday(){
   const P2=todayPlan(),L=dayLog(),B=$('#skBody');
-  B.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between;gap:10px;margin-bottom:6px"><div><div class="eyebrow">Bu gün · ${new Date().toLocaleDateString('az-AZ',{weekday:'long',day:'numeric',month:'long'})}</div><div class="muted" style="font-size:.86rem">${esc(P2.W.goal)}</div></div>
+  const allDone=P2.items.every(x=>L[x.k]);
+  B.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between;gap:10px;margin-bottom:6px"><div><div class="eyebrow">Plan ${pday()} · həftə ${P2.wk}, gün ${(pday()-1)%7+1}/7</div><div class="muted" style="font-size:.86rem">${esc(P2.W.goal)}</div></div>
   <div class="row" style="gap:6px"><button class="btn sm${P2.mode==='3h'?' primary':''}" data-mode="3h">3 saat</button><button class="btn sm${P2.mode==='90m'?' primary':''}" data-mode="90m">90 dəq</button></div></div>
   <div id="skItems">${P2.items.map((x,i)=>`<div class="sk-item${L[x.k]?' done':''}" data-i="${i}"><button class="ck" data-done="${x.k}" title="Bitdi kimi işarələ">${L[x.k]?'✓':''}</button><div><div class="t">${esc(x.t)} <span class="muted" style="font-weight:400;font-size:.82rem">· ${x.m} dəq</span></div><div class="d">${esc(x.d||'')}</div></div><button class="btn sm" data-go="${i}">Aç</button></div>`).join('')}</div></div>
+  ${allDone?`<div class="card" style="margin-top:12px;border-color:var(--good);border-width:2px;text-align:center"><b>Plan ${pday()} bitdi ✓</b><div class="muted" style="font-size:.88rem;margin:4px 0 10px">Növbəti plan yalnız indi açılır. İstəsən elə bu gün davam et.</div><button class="btn primary" id="pNext">Növbəti plana keç →</button></div>`:`<div class="muted" style="font-size:.85rem;margin-top:10px">Növbəti plan bu planın bütün hissələri bitəndə açılacaq.</div>`}
   <div class="card" style="margin-top:12px"><div class="eyebrow">Bu həftə yoxlama</div><div style="margin-top:4px">${esc(P2.W.check)}</div><div class="muted" style="font-size:.85rem;margin-top:6px">Bacarıq: ${esc(P2.W.cando)}</div></div>`;
   B.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{S.v2.mode=b.dataset.mode;save();skRender();}));
   B.querySelectorAll('[data-done]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.done;const L2=dayLog();L2[k]=!L2[k];save();skRender();}));
   B.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>P2.items[+b.dataset.go].go()));
+  if($('#pNext'))$('#pNext').addEventListener('click',()=>{S.v2.pday=pday()+1;save();toast('Plan '+S.v2.pday+' açıldı');skRender();renderDayCard();});
 }
 // --- Qrammatika ---
 function skGram(){
