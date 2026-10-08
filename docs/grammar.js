@@ -4,7 +4,7 @@
 const GRAM = [
 { id:"g01", status:"ready", level:"A2", week:1, mins:35,
   title:"be · have · do və sual/inkar",
-  goal:"am/is/are, have/has və do/does/did köməkçi fellərini düz seçib təsdiq, inkar və sual cümləsi qurmaq.",
+  goal:"am/is/are, have/has və do/does/did-i düz seçmək; sual və inkar qurmaq.",
   expl:[
     "İngilis cümləsində fel MÜTLƏQDİR. Azərbaycanca «Mən yorğunam» deyirik — ingiliscə fel lazımdır: <b>I am tired.</b> Burada fel <b>be</b>-dir: I <b>am</b>, he/she/it <b>is</b>, we/you/they <b>are</b>.",
     "<b>have/has</b> — sahib olmaq: I <b>have</b> a car. She <b>has</b> two brothers. (he/she/it → has)",
@@ -56,7 +56,7 @@ const GRAM = [
 },
 { id:"g02", status:"ready", level:"A2", week:1, mins:35,
   title:"Söz sırası: Subject + Verb + Object",
-  goal:"İngilis cümləsində sözləri düz sıraya qoymaq, zaman və yer sözlərini düz yerə yerləşdirmək.",
+  goal:"Sözləri ingilis qaydası ilə düz sıraya qoymaq.",
   expl:[
     "Azərbaycanca fel sonda gəlir: «Mən çay içirəm». İngiliscə fel <b>subyektdən dərhal sonra</b>: <b>I drink tea.</b> (S + V + O)",
     "Yer və zaman adətən sonda: I met him <b>at the station yesterday</b>. (əvvəl yer, sonra zaman)",

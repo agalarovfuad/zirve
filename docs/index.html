@@ -344,8 +344,13 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 .sk-meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
 .sk-meta span{font-size:.75rem;padding:2px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent-soft-ink);font-weight:600}
 .g-expl p{margin:0 0 10px;line-height:1.7}
-.g-expl h4{margin:16px 0 6px;font-size:1rem;color:var(--accent-soft-ink)}
-.g-expl table{border-collapse:collapse;margin:6px 0 12px;font-size:.92rem;width:100%}
+.g-expl h4{margin:0 0 6px;font-size:1.02rem;color:var(--accent-soft-ink)}
+.g-rule{padding:14px 0;border-top:1px solid var(--line)}.g-rule:first-child{border-top:0;padding-top:0}
+.g-exs{display:grid;gap:6px;margin-top:6px}
+.g-x{padding:8px 12px;border-radius:10px;background:var(--accent-soft);cursor:pointer}
+.g-x .en{font-weight:700;font-size:1.02rem}.g-x .az{font-size:.88rem;color:var(--muted)}
+.g-no{margin-top:8px;color:var(--bad);font-size:.9rem;font-weight:600}
+.g-expl table{border-collapse:collapse;margin:6px 0 8px;font-size:.95rem;width:auto;min-width:240px}
 .g-expl th,.g-expl td{border:1px solid var(--line);padding:6px 9px;text-align:left}
 .g-expl th{background:var(--accent-soft)}
 .g-expl ul{margin:4px 0 10px 18px;line-height:1.7}
@@ -769,19 +774,19 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1791437828"></script>
-<script src="texts.js?v=1791437828"></script>
-<script src="syllabus.js?v=1791437828"></script>
-<script src="speak.js?v=1791437828"></script>
-<script src="lemma.js?v=1791437828"></script>
-<script src="exams.js?v=1791437828"></script>
-<script src="listen.js?v=1791437828"></script>
+<script src="words.js?v=1791438281"></script>
+<script src="texts.js?v=1791438281"></script>
+<script src="syllabus.js?v=1791438281"></script>
+<script src="speak.js?v=1791438281"></script>
+<script src="lemma.js?v=1791438281"></script>
+<script src="exams.js?v=1791438281"></script>
+<script src="listen.js?v=1791438281"></script>
 <script src="listen-times.js"></script>
-<script src="teacher.js?v=1791437828"></script>
-<script src="grammar.js?v=1791437828"></script>
+<script src="teacher.js?v=1791438281"></script>
+<script src="grammar.js?v=1791438281"></script>
 <script src="grammar-expl.js"></script>
-<script src="tasks.js?v=1791437828"></script>
-<script src="plan.js?v=1791437828"></script>
+<script src="tasks.js?v=1791438281"></script>
+<script src="plan.js?v=1791438281"></script>
 <script>
 (function(){
 const $=s=>document.querySelector(s);
@@ -2179,11 +2184,15 @@ function skGram(){
   B.innerHTML=`<div class="sk-grid">${GRAM.map(g=>{const st=gramState(g.id)||{};const ready=g.status==='ready';return `<div class="card ${ready?'tc-card':''}" data-g="${g.id}" style="${ready?'':'opacity:.55'}"><div class="sk-meta"><span>${esc(g.level)}</span><span>həftə ${g.week}</span>${ready?`<span>~${g.mins} dəq</span>`:'<span>hazırlanır</span>'}</div><div style="font-weight:700">${esc(g.title)}</div><div class="muted" style="font-size:.85rem;margin-top:4px">${esc(g.goal)}</div>${st.act?`<div style="font-size:.82rem;margin-top:6px">Tanıma ${st.mc.best}% · Aktiv ${st.act.best}% ${st.done?'· <b style="color:var(--good)">tamamlandı ✓</b>':''}</div>`:''}</div>`;}).join('')}</div>`;
   B.querySelectorAll('.tc-card[data-g]').forEach(c=>c.addEventListener('click',()=>gramOpen(c.dataset.g)));
 }
+function gramBlock(x){
+  if(typeof x==='string')return /^<(h4|table|ul|ol|div)/.test(x)?x:'<p>'+x+'</p>';
+  return `<div class="g-rule"><h4>${esc(x.h)}</h4>${x.t?`<p>${esc(x.t)}</p>`:''}${x.tbl?`<table>${x.tbl.map(r=>`<tr>${r.map((c,i)=>i?`<td><b>${esc(c)}</b></td>`:`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`:''}${x.ex?`<div class="g-exs">${x.ex.map(e=>`<div class="g-x" data-say="${esc(e[0].split(' → ').pop())}"><div class="en">${esc(e[0])}</div><div class="az">${esc(e[1])}</div></div>`).join('')}</div>`:''}${x.no?`<div class="g-no">✗ ${esc(x.no)}</div>`:''}</div>`;
+}
 function gramOpen(id){
   const g=GRAM.find(x=>x.id===id),B=$('#skBody'),st=gramState(id)||{};
   B.innerHTML=`<button class="btn sm ghost" id="gBack">← Mövzular</button>
   <div class="card" style="margin-top:10px"><div class="sk-meta"><span>${g.level}</span><span>~${g.mins} dəq</span><span>həftə ${g.week}</span></div><h3 style="margin:4px 0 6px">${esc(g.title)}</h3><div class="muted" style="margin-bottom:12px"><b>Məqsəd:</b> ${esc(g.goal)}</div>
-  <div class="g-expl">${g.expl.map(x=>/^<(h4|table|ul|ol|div)/.test(x)?x:'<p>'+x+'</p>').join('')}</div></div>
+  <div class="g-expl">${g.expl.map(gramBlock).join('')}</div></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow" style="margin-bottom:8px">Nümunələr (bas — dinlə)</div><div class="g-ex">${g.examples.map(x=>`<div data-say="${esc(x[0])}"><b>${esc(x[0])}</b> <span class="muted">— ${esc(x[1])}</span></div>`).join('')}</div></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow" style="margin-bottom:8px">Azərbaycanca danışanların tipik səhvləri</div><table class="g-err">${g.errors.map(x=>`<tr><td class="bad">${esc(x[0])}</td><td class="good">${esc(x[1])}</td><td class="muted">${esc(x[2])}</td></tr>`).join('')}</table></div>
   <div class="card" style="margin-top:12px"><div class="eyebrow">Məşq</div><div class="muted" style="font-size:.88rem;margin:4px 0 10px">${g.mc.length} seçimli (tanıma) + ${g.type.length+g.fix.length} yazmalı (aktiv). Tamamlanma: aktiv hissədə 70%+ və qısa yazı. Səhvdə izah göstərilir.${st.act?` Son: tanıma ${st.mc.last}%, aktiv ${st.act.last}% (ilk cəhd ${st.act.first}%).`:''}</div><button class="btn primary" id="gRun">Məşqə başla</button></div>
