@@ -82,6 +82,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             switch cmd {
             case "listen": startListening()
             case "stop": stopListening(final: true)
+            case "openbook":
+                // Fuad-ın öz kitabını (PDF) lazım olan səhifədə açır — Chrome/Safari #page=N dəstəkləyir
+                if let file = d["file"] as? String, let page = d["page"] as? Int {
+                    let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/ClaudeCode/zirve/kitablar/" + file).path
+                    if FileManager.default.fileExists(atPath: path), let url = URL(string: URL(fileURLWithPath: path).absoluteString + "#page=\(page)") {
+                        let ws = NSWorkspace.shared
+                        let app = ws.urlForApplication(withBundleIdentifier: "com.google.Chrome") ?? ws.urlForApplication(withBundleIdentifier: "com.apple.Safari")
+                        if let app = app { ws.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil) } else { ws.open(url) }
+                    } else { js(["status": "error", "text": "Kitab tapılmadı: kitablar qovluğunda " + file + " yoxdur."]) }
+                }
             case "rec-start": recStart()
             case "rec-stop": recStop()
             case "snapshot":
