@@ -796,6 +796,9 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 <script src="grammar-lessons-1.js"></script>
 <script src="grammar-lessons-2.js"></script>
 <script src="grammar-lessons-3.js"></script>
+<script src="grammar-topics-1.js"></script>
+<script src="grammar-topics-2.js"></script>
+<script src="grammar-topics-3.js"></script>
 <script src="tasks.js"></script>
 <script src="plan.js"></script>
 <script src="phrases.js"></script>
@@ -2142,6 +2145,7 @@ function lastActive(){const L=S.daylog||{};const ks=Object.keys(L).filter(k=>Obj
 function gramState(id){return (S.gram||{})[id]||null;}
 // --- 15 dərslik qrammatika (grammar-lessons-*.js); yoxdursa köhnə mövzular ---
 const GRAMX=(()=>{
+  if(typeof GTOPICS!=='undefined'&&GTOPICS.length)return GTOPICS.slice().sort((x,y)=>x.id.localeCompare(y.id)).map((t,i)=>({...t,n:i+1,status:'ready',goal:t.intro,mins:Math.max(5,t.steps.length*5)}));
   const L=(typeof GLESSONS==='undefined'?[]:GLESSONS).slice().sort((x,y)=>x.id.localeCompare(y.id));
   if(!L.length)return GRAM;
   return L.map((l,i)=>{const olds=l.from.map(id=>GRAM.find(g=>g.id===id)).filter(Boolean);const cat=f=>[].concat(...olds.map(o=>o[f]||[]));
@@ -2157,7 +2161,9 @@ function gramMigrate(){
 }
 // plan günü → qrammatika vəzifəsi: 3 gündə bir dərs (oxu → məşq → təkrar); 45-ci gündən sonra ən zəif dərsin təkrarı
 function gramPlan(pd){
-  const N=GRAMX.length;if(!N)return null;const d=(pd-1)%3,i=Math.floor((pd-1)/3);
+  const N=GRAMX.length;if(!N)return null;
+  if(GRAMX[0].steps){const g=GRAMX.find(t=>gstepN(t.id)<t.steps.length);if(g)return {kind:'step',g,k:gstepN(g.id)};
+    const pool=GRAMX.slice().sort((a,b)=>(((gramState(a.id)||{}).rev||{}).last??0)-(((gramState(b.id)||{}).rev||{}).last??0));return {kind:'review',g:pool[pd%Math.min(6,pool.length)]};}const d=(pd-1)%3,i=Math.floor((pd-1)/3);
   if(i<N){const cur=GRAMX[i],prev=GRAMX[Math.max(0,i-1)];
     if(d===0)return {kind:'learn',g:cur};if(d===1)return {kind:'practice',g:cur};
     return {kind:'review',g:i===0?cur:prev};}
@@ -2166,7 +2172,8 @@ function gramPlan(pd){
   const pool=(done.length?done:GRAMX).slice().sort((a,b)=>score(a)-score(b)||String(((gramState(a.id)||{}).at)||'').localeCompare(String(((gramState(b.id)||{}).at)||'')));
   return {kind:'review',g:pool[(pd-46)%Math.min(pool.length,6)]};
 }
-const GP_LABEL={learn:'Yeni dərs',practice:'Məşq',review:'Təkrar'};
+const GP_LABEL={learn:'Yeni dərs',practice:'Məşq',review:'Təkrar',step:'Yeni addım'};
+function gstepN(id){return ((S.gstep||{})[id])||0;}
 function gramWeekText(w){const out=[];for(let pd=(w-1)*7+1;pd<=w*7;pd++){const x=gramPlan(pd);if(x&&!out.some(o=>o.g.id===x.g.id&&o.kind===x.kind))out.push(x);}return out.map(x=>GP_LABEL[x.kind]+': '+x.g.title).join(' · ');}
 function writeDone(id){return (S.writing||[]).some(x=>x.task===id);}
 function speakDone(id){return (S.speaking||[]).some(x=>x.task===id);}
@@ -2181,7 +2188,7 @@ function todayPlan(){
   const items=[
     {k:'vocab',t:'Söz və təkrar',m:slots[0][1],d:(due?due+' söz təkrara çatıb · ':'')+(cl?cl.label+': ~'+newN+' yeni söz':''),go:()=>{if(due)srsStart();else if(cl)openUnit(cl.p,cl.u,'words');}},
     ...(phrDay().length?[{k:'phr',t:'İfadələr',m:15,d:phrDay().length+' gündəlik ifadə · '+phrDay()[0].topic,go:()=>{SK2.tab='today';skRender();phrOpen();}}]:[]),
-    {k:'gram',t:'Qrammatika',m:slots[1][1],d:gp?GP_LABEL[gp.kind]+' · '+gp.g.title+(gp.kind==='learn'?' — dərsi oxu, sonra məşq 70%+':gp.kind==='practice'?' — kitab formatında məşq 70%+':' — xülasə və məşq 70%+'):'Qrammatika',go:()=>{SK2.tab='gram';skRender();if(!gp)return;if(gp.kind==='learn')gramOpen(gp.g.id);else if(gp.kind==='practice')gramBook(gp.g.id);else gramReview(gp.g.id);}},
+    {k:'gram',t:'Qrammatika',m:slots[1][1],d:gp&&gp.kind==='step'?'Addım '+(gp.k+1)+'/'+gp.g.steps.length+' · '+gp.g.title+': '+gp.g.steps[gp.k].h+' — oxu, sonra 5 asan sual':gp&&gp.g.steps?'Təkrar · '+gp.g.title+' — 10 sual':gp?GP_LABEL[gp.kind]+' · '+gp.g.title+(gp.kind==='learn'?' — dərsi oxu, sonra məşq 70%+':gp.kind==='practice'?' — kitab formatında məşq 70%+':' — xülasə və məşq 70%+'):'Qrammatika',go:()=>{SK2.tab='gram';skRender();if(!gp)return;if(gp.kind==='learn'||gp.g.steps)gramOpen(gp.g.id);else if(gp.kind==='practice')gramBook(gp.g.id);else gramReview(gp.g.id);}},
     {k:'listen',t:'Listening',m:slots[2][1],d:bcNext()?'British Council: '+bcNext().title+' ('+bcNext().level+') · 5 sual':(cl?cl.label+' — mətnin səsini dinlə':''),go:()=>{if(bcNext())bcOpen(bcNext().id);else if(cl)openUnit(cl.p,cl.u,'text');}},
     {k:'read',t:'Reading',m:slots[3][1],d:cl?cl.label+' — mətni oxu və sualları cavabla':'Mətn',go:()=>{if(cl)openUnit(cl.p,cl.u,'text');}},
     dayIdx%2===0&&wtask?{k:'write',t:'Writing',m:slots[4][1],d:wtask.title+' · '+wtask.kind,go:()=>{SK2.tab='write';skRender();wrOpen(wtask.id);}}
@@ -2290,6 +2297,7 @@ function skToday(){
 }
 // --- Qrammatika ---
 function skGram(){
+  if(GRAMX[0]&&GRAMX[0].steps)return skTopics();
   const B=$('#skBody'),pl=gramPlan(pday());
   B.innerHTML=(pl?`<div class="card" style="border-color:var(--accent);margin-bottom:12px"><div class="eyebrow">Bu günün qrammatikası</div><div style="margin-top:4px"><b>${esc(GP_LABEL[pl.kind])}: ${esc(pl.g.title)}</b></div><div class="row" style="margin-top:8px"><button class="btn primary sm" id="gToday">Başla</button></div></div>`:'')+
   `<div class="muted" style="font-size:.88rem;margin-bottom:10px">${GRAMX.length} dərs. Hər dərs bir mövzudur: bir tam izah → məşq → təkrar. İstədiyin dərsi istənilən vaxt aça bilərsən.</div><div class="sk-grid">${GRAMX.map((g,i)=>{const st=gramState(g.id)||{};const best=Math.max((st.book||{}).best||0,(st.act||{}).best||0);return `<div class="card tc-card" data-g="${g.id}"><div class="sk-meta"><span>Dərs ${i+1}</span><span>${esc(g.level)}</span><span>~${g.mins} dəq</span></div><div style="font-weight:700">${esc(g.title)}</div>${(st.book||st.act)?`<div style="font-size:.82rem;margin-top:6px">Ən yaxşı məşq: <b>${best}%</b> ${st.done?'· <b style="color:var(--good)">tamamlandı ✓</b>':''}</div>`:'<div class="muted" style="font-size:.8rem;margin-top:6px">hələ başlanmayıb</div>'}</div>`;}).join('')}</div>`;
@@ -2323,6 +2331,68 @@ function gramOpenLesson(g){
   if($('#gBookRun'))$('#gBookRun').addEventListener('click',()=>gramBook(id));
   $('#gSp').addEventListener('click',()=>{SK2.tab='speak';skRender();spOpen(null,{title:g.title,q:[g.speak.task],secs:g.speak.secs,prep:20,part:'Qrammatika tətbiqi',level:g.level,id:'gs-'+id});});
 }
+// --- tək mövzulu dərslər: bir addım = bir qayda + 5 asan sual ---
+function topicLocked(g){const i=GRAMX.indexOf(g);if(i<=0)return false;const p=GRAMX[i-1];return gstepN(p.id)<p.steps.length&&gstepN(g.id)===0;}
+function skTopics(){
+  const B=$('#skBody'),pl=gramPlan(pday());
+  B.innerHTML=(pl?`<div class="card" style="border-color:var(--accent);margin-bottom:12px"><div class="eyebrow">Bu günün qrammatikası</div><div style="margin-top:4px"><b>${pl.kind==='step'?esc(pl.g.title)+' · addım '+(pl.k+1)+': '+esc(pl.g.steps[pl.k].h):'Təkrar: '+esc(pl.g.title)}</b></div><div class="row" style="margin-top:8px"><button class="btn primary sm" id="gToday">Başla</button></div></div>`:'')+
+  `<div class="muted" style="font-size:.88rem;margin-bottom:10px">Hər dərs yalnız bir mövzudur. Dərs kiçik addımlara bölünüb: hər addımda bir qayda və 5 asan sual. 4/5 düz — növbəti addım açılır.</div><div class="sk-grid">${GRAMX.map(g=>{const k=gstepN(g.id),n=g.steps.length,done=k>=n;return `<div class="card tc-card" data-g="${g.id}" style="${topicLocked(g)?'opacity:.55':''}"><div class="sk-meta"><span>Dərs ${g.n}</span><span>${esc(g.level)}</span><span>${n} addım</span></div><div style="font-weight:700">${esc(g.title)}</div><div class="prog" style="height:5px;margin-top:8px"><i style="width:${k/n*100}%;${done?'background:var(--good)':''}"></i></div><div class="muted" style="font-size:.8rem;margin-top:4px">${done?'<b style="color:var(--good)">tamamlandı ✓</b>':k?'addım '+k+' / '+n:'başlanmayıb'}</div></div>`;}).join('')}</div>`;
+  B.querySelectorAll('.tc-card[data-g]').forEach(c=>c.addEventListener('click',()=>gramOpen(c.dataset.g)));
+  if($('#gToday'))$('#gToday').addEventListener('click',()=>gramOpen(pl.g.id));
+}
+function topicOpen(g,showK){
+  const B=$('#skBody'),n=g.steps.length,passed=gstepN(g.id);
+  if(showK==null&&passed>=n)return topicDone(g);
+  const k=showK!=null?showK:passed,st=g.steps[k];
+  B.innerHTML=`<button class="btn sm ghost" id="tBack">← Dərslər</button>
+  <div class="card" style="margin-top:10px"><div class="sk-meta"><span>Dərs ${g.n}</span><span>${esc(g.level)}</span></div><h2 style="margin:4px 0 6px">${esc(g.title)}</h2>${k===0&&g.intro?`<div class="muted" style="margin-bottom:8px">${esc(g.intro)}</div>`:''}
+  <div class="row" style="gap:6px;margin:6px 0 12px;flex-wrap:wrap">${g.steps.map((s,i)=>`<button class="btn sm${i===k?' primary':''}" data-k="${i}" ${i>passed?'disabled':''} title="${esc(s.h)}">${i<passed?'✓ ':''}${i+1}</button>`).join('')}${passed>=n?'<button class="btn sm" data-k="sum">Xülasə</button>':''}</div>
+  <div class="eyebrow">Addım ${k+1} / ${n}</div>
+  <div class="g-expl" style="margin-top:6px">${gramBlock(st)}</div>
+  <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="tQuiz">${k<passed?'Yenidən yoxla (5 sual)':'Başa düşdüm — 5 sual'}</button></div></div>`;
+  $('#tBack').addEventListener('click',()=>skRender());
+  B.querySelectorAll('[data-say]').forEach(d=>d.addEventListener('click',()=>ttsSay(d.dataset.say,.9)));
+  B.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>b.dataset.k==='sum'?topicDone(g):topicOpen(g,+b.dataset.k)));
+  $('#tQuiz').addEventListener('click',()=>topicQuiz(g,k,st.q,false));
+  window.scrollTo(0,0);
+}
+function topicQuiz(g,k,qs,review){
+  const B=$('#skBody'),items=shuffle(qs).map(x=>x.t==='mc'?{...x,sh:shuffle(x.opts.map((o,i)=>({o,ok:i===0})))}:x),R={i:0,ok:0,wrong:[]};
+  const draw=()=>{
+    if(R.i>=items.length){const N=items.length,need=review?Math.ceil(N*0.7):Math.min(4,N),pass=R.ok>=need;
+      if(!review&&pass&&k>=gstepN(g.id)){(S.gstep||(S.gstep={}))[g.id]=k+1;markDay('gram');if(k+1>=g.steps.length){const x=(S.gram||(S.gram={}))[g.id]||(S.gram[g.id]={});x.done=true;x.at=new Date().toISOString();}}
+      if(review){const x=(S.gram||(S.gram={}))[g.id]||(S.gram[g.id]={});const pct=Math.round(R.ok/N*100);x.rev={best:Math.max(pct,(x.rev||{}).best||0),last:pct};x.at=new Date().toISOString();if(pass)markDay('gram');}
+      save();
+      const last=!review&&pass&&k+1>=g.steps.length,next=!review&&pass&&!last;
+      B.innerHTML=`<div class="card result"><div class="eyebrow">${esc(g.title)} · ${review?'təkrar':'addım '+(k+1)}</div><div class="big num ${pass?'':'mid'}">${R.ok} / ${N}</div><div class="verdict ${pass?'ok':'no'}">${pass?(review?'Əla, təkrar keçdi ✓':last?'Dərs tamamlandı ✓':'Keçdin ✓ — növbəti addım açıldı'):'Qaydanı bir də oxu və yenidən cəhd et'}</div>
+      ${R.wrong.length?`<div class="card" style="text-align:left;width:100%;max-width:520px">${R.wrong.map(w=>`<div style="padding:6px 0;border-top:1px solid var(--line)">${esc(w.q)}<br><b style="color:var(--good)">${esc(w.a)}</b>${w.h?`<div class="muted" style="font-size:.85rem">${esc(w.h)}</div>`:''}</div>`).join('')}</div>`:''}
+      <div class="row" style="justify-content:center">${next?'<button class="btn primary" id="qNext">Növbəti addım →</button>':''}<button class="btn${next?'':' primary'}" id="qBack">${pass?(last||review?'Xülasəyə bax':'Bu addıma qayıt'):'Yenidən oxu'}</button><button class="btn ghost" id="qList">Dərslər</button></div></div>`;
+      if(last){const nx=GRAMX[GRAMX.indexOf(g)+1];if(nx){const bn=el('button','btn primary','Növbəti dərs: '+esc(nx.title)+' →');bn.addEventListener('click',()=>topicOpen(nx));B.querySelector('.result .row').prepend(bn);$('#qBack').classList.remove('primary');}}
+      if($('#qNext'))$('#qNext').addEventListener('click',()=>topicOpen(g));
+      $('#qBack').addEventListener('click',()=>pass&&(last||review)?topicDone(g):review?topicDone(g):topicOpen(g,k));
+      $('#qList').addEventListener('click',()=>skRender());return;}
+    const it=items[R.i];
+    B.innerHTML=`<div class="test-head"><div class="muted num">${esc(g.title)} · ${review?'təkrar':'addım '+(k+1)} · ${R.i+1} / ${items.length}</div></div><div class="prog"><i style="width:${R.i/items.length*100}%"></i></div>
+    <div class="card qcard"><div class="bq-sent" style="margin-bottom:12px">${esc(it.q)}</div>${it.t==='mc'?'<div class="opts" id="tO"></div>':'<input class="bq-in" id="tI" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="boşluğa gələn sözü yaz"><div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn primary" id="tOk">Yoxla</button></div>'}<div class="bq-fb" id="tF" style="margin-top:10px"></div></div>`;
+    let lock=false;
+    const fin=(ok,correct)=>{if(ok)R.ok++;else R.wrong.push({q:it.q,a:correct,h:it.hint});
+      $('#tF').innerHTML=ok?'<span style="color:var(--good)">Düzdür ✓</span>':`<span style="color:var(--bad)">Düz cavab:</span> <b>${esc(correct)}</b>${it.hint?`<div class="muted">${esc(it.hint)}</div>`:''}`;
+      if(ok)setTimeout(()=>{R.i++;draw();},700);else{const b=el('button','btn primary','Davam →');b.style.marginTop='8px';b.addEventListener('click',()=>{R.i++;draw();});$('#tF').appendChild(b);setTimeout(()=>b.focus(),30);}};
+    if(it.t==='mc')it.sh.forEach((x,j)=>{const b=el('button','opt',`<kbd>${j+1}</kbd><span>${esc(x.o)}</span>`);b.addEventListener('click',()=>{if(lock)return;lock=true;[...$('#tO').children].forEach((bb,jj)=>{bb.disabled=true;if(it.sh[jj].ok)bb.classList.add('ok');else if(jj===j)bb.classList.add('no');});fin(x.ok,it.opts[0]);});$('#tO').appendChild(b);});
+    else{const inp=$('#tI');setTimeout(()=>inp.focus(),40);const chk=()=>{if(inp.readOnly||!normAns(inp.value))return;inp.readOnly=true;const ok=it.a.some(a=>normAns(a)===normAns(inp.value));inp.classList.add(ok?'ok':'no');fin(ok,it.a[0]);};inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();chk();}});$('#tOk').addEventListener('click',chk);}
+  };
+  draw();
+}
+function topicDone(g){
+  const B=$('#skBody'),x=gramState(g.id)||{},n=g.steps.length,passed=gstepN(g.id);
+  B.innerHTML=`<button class="btn sm ghost" id="tBack">← Dərslər</button><div class="card" style="margin-top:10px"><div class="sk-meta"><span>Dərs ${g.n}</span>${passed>=n?'<span style="color:var(--good)">tamamlandı ✓</span>':''}</div><h2 style="margin:4px 0 8px">${esc(g.title)}</h2>
+  <div class="g-rule"><h4>Yadda saxla</h4><ul>${(g.sum||[]).map(s=>`<li>${esc(s)}</li>`).join('')}</ul></div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">${g.steps.map((s,i)=>`<button class="btn sm ghost" style="text-align:left" data-k="${i}">${i+1}. ${esc(s.h)}</button>`).join('')}</div>
+  <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary" id="tRev">Təkrar testi (10 sual)</button></div>${x.rev?`<div class="muted" style="text-align:center;font-size:.85rem;margin-top:6px">Son təkrar: ${x.rev.last}%</div>`:''}</div>`;
+  $('#tBack').addEventListener('click',()=>skRender());
+  B.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>topicOpen(g,+b.dataset.k)));
+  $('#tRev').addEventListener('click',()=>topicQuiz(g,0,shuffle(g.steps.flatMap(s=>s.q)).slice(0,10),true));
+}
 function gramReview(id){
   const g=GX(id),B=$('#skBody');
   B.innerHTML=`<button class="btn sm ghost" id="grBack">← Dərslər</button><div class="card" style="margin-top:10px"><div class="eyebrow">Təkrar</div><h3 style="margin:4px 0 8px">${esc(g.title)}</h3><div class="g-sum"><b>Yadda saxla</b><ul>${(g.sum||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div><div class="row" style="gap:8px;margin-top:12px"><button class="btn primary" id="grGo">Məşqə başla (5 qrup)</button><button class="btn" id="grFull">Dərsi tam oxu</button></div></div>`;
@@ -2337,6 +2407,7 @@ function gramBlock(x){
 }
 function gramOpen(id){
   const g=GX(id),B=$('#skBody'),st=gramState(id)||{};
+  if(g.steps)return topicOpen(g);
   if(g.sections)return gramOpenLesson(g);
   B.innerHTML=`<button class="btn sm ghost" id="gBack">← Mövzular</button>
   <div class="card" style="margin-top:10px"><div class="sk-meta"><span>${g.level}</span><span>~${g.mins} dəq</span><span>həftə ${g.week}</span></div><h3 style="margin:4px 0 6px">${esc(g.title)}</h3><div class="muted" style="margin-bottom:6px"><b>Məqsəd:</b> ${esc(g.goal)}</div>${g.ref?`<div class="muted" style="font-size:.85rem;margin-bottom:8px">📘 Kitabda əlavə məşq: ${esc(g.ref)}</div>`:''}${NATIVE&&murphyUnit(g)?`<div class="row" style="gap:8px;margin-bottom:12px"><button class="btn sm" id="gBook">📘 Murphy-də aç (Unit ${murphyUnit(g)})</button><button class="btn sm ghost" id="gKey">Cavab açarı</button></div>`:''}
