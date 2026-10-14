@@ -785,16 +785,16 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1791824808"></script>
-<script src="texts.js?v=1791824808"></script>
-<script src="syllabus.js?v=1791824808"></script>
-<script src="speak.js?v=1791824808"></script>
-<script src="lemma.js?v=1791824808"></script>
-<script src="exams.js?v=1791824808"></script>
-<script src="listen.js?v=1791824808"></script>
+<script src="words.js?v=1791980304"></script>
+<script src="texts.js?v=1791980304"></script>
+<script src="syllabus.js?v=1791980304"></script>
+<script src="speak.js?v=1791980304"></script>
+<script src="lemma.js?v=1791980304"></script>
+<script src="exams.js?v=1791980304"></script>
+<script src="listen.js?v=1791980304"></script>
 <script src="listen-times.js"></script>
-<script src="teacher.js?v=1791824808"></script>
-<script src="grammar.js?v=1791824808"></script>
+<script src="teacher.js?v=1791980304"></script>
+<script src="grammar.js?v=1791980304"></script>
 <script src="grammar-expl.js"></script>
 <script src="grammar-sets-a.js"></script>
 <script src="grammar-sets-b.js"></script>
@@ -804,9 +804,9 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 <script src="grammar-topics-1.js"></script>
 <script src="grammar-topics-2.js"></script>
 <script src="grammar-topics-3.js"></script>
-<script src="tasks.js?v=1791824808"></script>
-<script src="plan.js?v=1791824808"></script>
-<script src="phrases.js?v=1791824808"></script>
+<script src="tasks.js?v=1791980304"></script>
+<script src="plan.js?v=1791980304"></script>
+<script src="phrases.js?v=1791980304"></script>
 <script src="bc-listen.js"></script>
 <script>
 (function(){
@@ -1730,13 +1730,13 @@ function srsAnswer(k){
 function srsEnd(){
   save();updateRing();
   const n=SR.q.filter(x=>!x.retry).length,pct=Math.round(SR.right/n*100),left=SR.custom?0:srsDueToday();
-  $('#srsRun').hidden=true;$('#srsEnd').hidden=false;
+  $('#srsRun').hidden=true;$('#srsEnd').hidden=false;$('#srsNew')&&$('#srsNew').remove();
   const big=$('#srsPct');big.className='big num '+(pct>=85?'':pct>=65?'mid':'low');countUp(big,pct);
   const nFirst=SR.q.filter(x=>!x.retry).length;clearInterval(SR.tk);
   $('#srsMsg').textContent=`İlk cəhd: ${SR.right} / ${nFirst} düz · ən uzun seriya: ${SR.best}. Səhvlər sabah yenidən çıxacaq və Çətin sözlərə düşdü.`+(left?` Bu gün hələ ${left} söz qalıb.`:' Bu günün təkrarı bitdi ✓');
   $('#srsWrong').innerHTML='';SR.wrong.forEach(w=>{const sp=el('span',null,`${esc(w[1])} — ${esc(w[3])}`);sp.addEventListener('click',()=>sayWord(w));$('#srsWrong').appendChild(sp);});
   $('#srsMore').hidden=!left;
-  if(!SR.custom&&v2on()&&!srsDueToday())markDay('vocab');
+  if(!SR.custom&&v2on()&&!srsDueToday()){const cl=curLessonText();if(cl&&cl.u.k==='l'&&!S.done.includes(ukey(cl.p,cl.u))){markDay('rev');$('#srsMsg').textContent+=` İndi ${cl.label}-in yeni sözləri qalıb — plan «Söz» hissəsini yalnız onun testindən sonra bitmiş sayır.`;$('#srsNew')&&$('#srsNew').remove();const b=el('button','btn primary',cl.label+' — yeni sözlər →');b.id='srsNew';b.style.marginTop='10px';b.addEventListener('click',()=>openUnit(cl.p,cl.u,'words'));$('#srsMsg').after(b);}else markDay('vocab');}
   S.history.unshift({l:SR.custom?SR.custom.title:'Gündəlik təkrar',pct,at:new Date().toISOString()});S.history=S.history.slice(0,40);
   if(SR.custom){
     // hər iki cəhddə düz cavab verilən söz «əzbərləndi» — çətin sözlərdən çıxır
@@ -2183,19 +2183,27 @@ function gramWeekText(w){const out=[];for(let pd=(w-1)*7+1;pd<=w*7;pd++){const x
 function writeDone(id){return (S.writing||[]).some(x=>x.task===id);}
 function speakDone(id){return (S.speaking||[]).some(x=>x.task===id);}
 function curLessonText(){const c=S.cursor;const p=P(c.p);if(p.kind!=='vocab')return null;const ls=unitLessons(c.u);return {p:c.p,u:c.u,label:unitTitle(p,c.u).t};}
+// oxu: cari dərsin mətni oxunubsa, yenidən onu yox — ən zəif köhnə mətni (son 5 gündə oxunmayan) təkrar ver
+function readPick(cl){
+  if(!cl)return null;const key=ukey(cl.p,cl.u);if(!S.reading[key])return {...cl,rev:false};
+  const now=Date.now(),pre=cl.p+'-';
+  const c=Object.entries(S.reading).filter(([k,v])=>k.startsWith(pre)&&k!==key&&now-new Date(v.at).getTime()>5*864e5).map(([k,v])=>{const r=k.slice(pre.length),m=r.match(/^(r?)(\d+)$/);return m?{u:{k:m[1]?'r':'l',n:+m[2]},pct:v.pct,at:v.at}:null;}).filter(Boolean).sort((a,b)=>a.pct-b.pct||a.at.localeCompare(b.at));
+  if(!c.length)return {...cl,rev:true,doneCur:true};
+  const x=c[0];return {p:cl.p,u:x.u,label:unitTitle(P(cl.p),x.u).t,rev:true,pct:x.pct};
+}
 function todayPlan(){
   const wk=planWeek(),W=PLAN[wk-1],mode=S.v2.mode||'3h',slots=PLAN_DAY[mode];const L=dayLog();
   const due=srsDueToday(),newN=S.v2.newPerDay||60;
   const gp=gramPlan(pday());const dayIdx=(pday()-1)%7;
   const wtask=WRITING.find(t=>(W.write||[]).includes(t.id)&&!writeDone(t.id))||WRITING.find(t=>(W.write||[]).includes(t.id));
   const stask=SPEAKING.find(t=>(W.speak||[]).includes(t.id)&&!speakDone(t.id))||SPEAKING.find(t=>(W.speak||[]).includes(t.id));
-  const cl=curLessonText();const light=dayIdx===6;
+  const cl=curLessonText(),rp=readPick(cl);const light=dayIdx===6;
   const items=[
-    {k:'vocab',t:'Söz və təkrar',m:slots[0][1],d:(due?due+' söz təkrara çatıb · ':'')+(cl?cl.label+': ~'+newN+' yeni söz':''),go:()=>{if(due)srsStart();else if(cl)openUnit(cl.p,cl.u,'words');}},
+    {k:'vocab',t:'Söz və təkrar',m:slots[0][1],d:(due&&!L.rev?'1) '+due+' söz təkrar · 2) ':L.rev?'Təkrar ✓ · indi: ':'')+(cl?cl.label+': ~'+newN+' yeni söz + test (90%)':''),go:()=>{if(due&&!L.rev)srsStart();else if(cl)openUnit(cl.p,cl.u,'words');}},
     ...(phrDay().length?[{k:'phr',t:'İfadələr',m:15,d:phrDay().length+' gündəlik ifadə · '+phrDay()[0].topic,go:()=>{SK2.tab='today';skRender();phrOpen();}}]:[]),
     {k:'gram',t:'Qrammatika',m:slots[1][1],d:gp&&gp.kind==='step'?'Addım '+(gp.k+1)+'/'+gp.g.steps.length+' · '+gp.g.title+': '+gp.g.steps[gp.k].h+' — oxu, sonra 5 asan sual':gp&&gp.g.steps?'Təkrar · '+gp.g.title+' — 10 sual':gp?GP_LABEL[gp.kind]+' · '+gp.g.title+(gp.kind==='learn'?' — dərsi oxu, sonra məşq 70%+':gp.kind==='practice'?' — kitab formatında məşq 70%+':' — xülasə və məşq 70%+'):'Qrammatika',go:()=>{SK2.tab='gram';skRender();if(!gp)return;if(gp.kind==='learn'||gp.g.steps)gramOpen(gp.g.id);else if(gp.kind==='practice')gramBook(gp.g.id);else gramReview(gp.g.id);}},
     {k:'listen',t:'Listening',m:slots[2][1],d:bcNext()?'British Council: '+bcNext().title+' ('+bcNext().level+') · 5 sual':(cl?cl.label+' — mətnin səsini dinlə':''),go:()=>{if(bcNext())bcOpen(bcNext().id);else if(cl)openUnit(cl.p,cl.u,'text');}},
-    {k:'read',t:'Reading',m:slots[3][1],d:cl?cl.label+' — mətni oxu və sualları cavabla':'Mətn',go:()=>{if(cl)openUnit(cl.p,cl.u,'text');}},
+    {k:'read',t:'Reading',m:slots[3][1],d:rp?(rp.doneCur?cl.label+' mətni oxunub ✓ — istəsən təkrar oxu':rp.rev?'Təkrar oxu: '+rp.label+' (əvvəlki nəticə '+rp.pct+'%) — '+cl.label+' mətnini artıq oxumusan':rp.label+' — mətni oxu və sualları cavabla'):'Mətn',go:()=>{if(rp)openUnit(rp.p,rp.u,'text');}},
     dayIdx%2===0&&wtask?{k:'write',t:'Writing',m:slots[4][1],d:wtask.title+' · '+wtask.kind,go:()=>{SK2.tab='write';skRender();wrOpen(wtask.id);}}
       :{k:'speak',t:'Speaking',m:slots[4][1],d:stask?stask.title+' · '+stask.part:'Sərbəst danışıq',go:()=>{SK2.tab='speak';skRender();if(stask)spOpen(stask.id);}}
   ];
