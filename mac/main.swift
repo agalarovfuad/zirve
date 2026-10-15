@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     var lastChange = Date()
     var silenceTimer: Timer?
     var listening = false
+    var pauseSecs = 1.5   // susqunluq həddi; söhbət rejimində daha uzun
 
     // --- səs yazma (Speaking): fayl + istəyə bağlı transcript ---
     var recFile: AVAudioFile?
@@ -80,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             }
         } else if let d = message.body as? [String: Any], let cmd = d["cmd"] as? String {
             switch cmd {
-            case "listen": startListening()
+            case "listen": pauseSecs = (d["pause"] as? Double) ?? 1.5; startListening()
             case "stop": stopListening(final: true)
             case "openbook":
                 // Fuad-ın öz kitabını (PDF) lazım olan səhifədə açır — Chrome/Safari #page=N dəstəkləyir
@@ -156,7 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         silenceTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { _ in
             guard self.listening else { return }
             let quiet = Date().timeIntervalSince(self.lastChange)
-            if (!self.lastText.isEmpty && quiet > 1.5) || quiet > 8 { self.finish() }
+            if (!self.lastText.isEmpty && quiet > self.pauseSecs) || quiet > max(8, self.pauseSecs * 3) { self.finish() }
         }
     }
 

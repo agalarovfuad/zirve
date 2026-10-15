@@ -785,16 +785,16 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1792033822"></script>
-<script src="texts.js?v=1792033822"></script>
-<script src="syllabus.js?v=1792033822"></script>
-<script src="speak.js?v=1792033822"></script>
-<script src="lemma.js?v=1792033822"></script>
-<script src="exams.js?v=1792033822"></script>
-<script src="listen.js?v=1792033822"></script>
+<script src="words.js?v=1792034295"></script>
+<script src="texts.js?v=1792034295"></script>
+<script src="syllabus.js?v=1792034295"></script>
+<script src="speak.js?v=1792034295"></script>
+<script src="lemma.js?v=1792034295"></script>
+<script src="exams.js?v=1792034295"></script>
+<script src="listen.js?v=1792034295"></script>
 <script src="listen-times.js"></script>
-<script src="teacher.js?v=1792033822"></script>
-<script src="grammar.js?v=1792033822"></script>
+<script src="teacher.js?v=1792034295"></script>
+<script src="grammar.js?v=1792034295"></script>
 <script src="grammar-expl.js"></script>
 <script src="grammar-sets-a.js"></script>
 <script src="grammar-sets-b.js"></script>
@@ -804,9 +804,10 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 <script src="grammar-topics-1.js"></script>
 <script src="grammar-topics-2.js"></script>
 <script src="grammar-topics-3.js"></script>
-<script src="tasks.js?v=1792033822"></script>
-<script src="plan.js?v=1792033822"></script>
-<script src="phrases.js?v=1792033822"></script>
+<script src="conv.js?v=1792034295"></script>
+<script src="tasks.js?v=1792034295"></script>
+<script src="plan.js?v=1792034295"></script>
+<script src="phrases.js?v=1792034295"></script>
 <script src="bc-listen.js"></script>
 <script>
 (function(){
@@ -2140,7 +2141,7 @@ function ieMark(kind,X){
 // ---------- Bacarıqlar (yeni sistem): gündəlik plan, qrammatika, Writing, Speaking, plan, hesabat ----------
 let SK2={tab:'today',rec:null,timer:null};
 const v2on=()=>!!(S.v2&&S.v2.active);
-function skStop(){clearInterval(SK2.timer);SK2.timer=null;if(SK2.rec&&SK2.rec.stop)try{SK2.rec.stop();}catch(e){}}
+function skStop(){clearInterval(SK2.timer);SK2.timer=null;if(CV.t)cvStop();if(SK2.rec&&SK2.rec.stop)try{SK2.rec.stop();}catch(e){}}
 $('#skTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;skStop();SK2.tab=b.dataset.t;skRender();});
 const dayDiff=(a,b)=>Math.round((new Date(b+'T12:00')-new Date(a+'T12:00'))/864e5);
 // plan günü təqvimlə yox, iş ilə irəliləyir: əvvəlki plan bitməyincə növbəti açılmır (Fuad, 2026-10-08)
@@ -2212,7 +2213,7 @@ function todayPlan(){
     {k:'listen',t:'Listening',m:slots[2][1],d:bcNext()?'British Council: '+bcNext().title+' ('+bcNext().level+') · 5 sual':(cl?cl.label+' — mətnin səsini dinlə':''),go:()=>{if(bcNext())bcOpen(bcNext().id);else if(cl)openUnit(cl.p,cl.u,'text');}},
     {k:'read',t:'Reading',m:slots[3][1],d:rp?(rp.doneCur?cl.label+' mətni oxunub ✓ — istəsən təkrar oxu':rp.rev?'Təkrar oxu: '+rp.label+' (əvvəlki nəticə '+rp.pct+'%) — '+cl.label+' mətnini artıq oxumusan':rp.label+' — mətni oxu və sualları cavabla'):'Mətn',go:()=>{if(rp)openUnit(rp.p,rp.u,'text');}},
     dayIdx%2===0&&wtask?{k:'write',t:'Writing',m:slots[4][1],d:wtask.title+' · '+wtask.kind,go:()=>{SK2.tab='write';skRender();wrOpen(wtask.id);}}
-      :{k:'speak',t:'Speaking',m:slots[4][1],d:stask?stask.title+' · '+stask.part:'Sərbəst danışıq',go:()=>{SK2.tab='speak';skRender();if(stask)spOpen(stask.id);}}
+      :(()=>{const cv=cvNext();return cv?{k:'speak',t:'Speaking — söhbət',m:slots[4][1],d:'Emma ilə söhbət: '+cv.title+' · '+cv.q.length+' sual, səslə cavab ver',go:()=>{SK2.tab='speak';skRender();cvOpen(cv.id);}}:{k:'speak',t:'Speaking',m:slots[4][1],d:stask?stask.title+' · '+stask.part:'Sərbəst danışıq',go:()=>{SK2.tab='speak';skRender();if(stask)spOpen(stask.id);}};})()
   ];
   if(light)items.splice(1,items.length-1,{k:'speak',t:'Yüngül gün',m:30,d:'Yalnız təkrar və bir qısa danışıq — istirahət də plana daxildir',go:()=>{SK2.tab='speak';skRender();}});
   return {wk,W,items,due,light,mode};
@@ -2574,11 +2575,118 @@ function recorder(onDone,onErr,onState){
   if(!navigator.mediaDevices||!window.MediaRecorder){onErr('Bu brauzer səs yazmağı dəstəkləmir — cavabını yazılı ver.');return null;}
   const h={stop:()=>{}};navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{const mr=new MediaRecorder(stream);const ch=[];mr.ondataavailable=e=>ch.push(e.data);mr.onstop=()=>{stream.getTracks().forEach(t=>t.stop());onDone(new Blob(ch,{type:mr.mimeType||'audio/webm'}),'');};mr.start();onState&&onState({transcribe:false});h.stop=()=>{if(mr.state!=='inactive')mr.stop();};}).catch(()=>onErr('Mikrofona icazə yoxdur — cavabını yazılı ver.'));return h;
 }
+// --- Söhbət: Emma sual verir (səslə), sən səslə cavab verirsən, o reaksiya verib növbəti suala keçir ---
+const CV={t:null,i:0,log:[],followed:false,listening:false,t0:0,busy:false};
+function cvDone(id){return (S.speaking||[]).filter(x=>x.task==='cv-'+id).length;}
+function cvNext(){if(typeof CONV==='undefined')return null;return CONV.find(t=>!cvDone(t.id))||CONV.slice().sort((a,b)=>cvDone(a.id)-cvDone(b.id))[0];}
+function cvSay(text,cb){
+  let fired=false;const go=()=>{if(fired)return;fired=true;cb&&cb();};
+  if(!('speechSynthesis' in window)){setTimeout(go,300);return;}
+  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';if(voice)u.voice=voice;u.rate=.85;
+  u.onend=()=>setTimeout(go,250);u.onerror=()=>go();speechSynthesis.speak(u);
+  setTimeout(go,1500+text.split(' ').length*520); // onend gəlməsə də davam etsin
+}
+function cvList(){
+  if(typeof CONV==='undefined')return '';
+  return `<div class="gl-h">Söhbət — Emma ilə danış</div><div class="muted" style="font-size:.86rem;margin-bottom:8px">Emma səslə sual verir, sən səslə cavab verirsən, o cavabına reaksiya verib növbəti suala keçir. Qısa cavab versən, əlavə sual soruşur. Hər cavab 2–3 cümlə olsun.</div>
+  <div class="sk-grid" style="margin-bottom:16px">${CONV.map(t=>{const n=cvDone(t.id);return `<div class="card tc-card" data-cv="${t.id}"><div class="sk-meta"><span>${t.level}</span><span>${t.q.length} sual</span>${n?`<span style="color:var(--good)">${n}× ✓</span>`:''}</div><div style="font-weight:700">${esc(t.title)}</div><div class="muted" style="font-size:.82rem">${esc(t.en)}</div></div>`;}).join('')}</div>`;
+}
+function cvOpen(id){
+  const t=CONV.find(x=>x.id===id),B=$('#skBody');skStop();cvStop();
+  Object.assign(CV,{t,i:0,log:[],followed:false,t0:Date.now(),busy:false});
+  B.innerHTML=`<button class="btn sm ghost" id="cvBack">← Speaking</button>
+  <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><div><div class="eyebrow">Söhbət · ${esc(t.level)}</div><h3 style="margin:2px 0">${esc(t.title)} <span class="muted" style="font-weight:400">· ${esc(t.en)}</span></h3></div><div class="muted num" id="cvPos"></div></div>
+  <div id="cvChat" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;max-height:52vh;overflow:auto;padding:4px"></div>
+  <div id="cvHeard" class="muted" style="min-height:1.6em;margin-top:10px;text-align:center"></div>
+  <div class="row" style="justify-content:center;gap:10px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" id="cvRep">▶ Sualı təkrar et</button><button class="btn sm" id="cvAz">Azərbaycanca</button><button class="btn sm" id="cvHelp">Kömək</button><button class="rec-btn" id="cvMic">🎤 Danış</button><button class="btn sm ghost" id="cvSkip">Keç →</button></div>
+  <div id="cvTip" class="muted" style="text-align:center;font-size:.9rem;margin-top:8px"></div>
+  <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Mikrofon işləmir? Cavabı yaz</summary><div class="row" style="gap:6px;margin-top:6px"><input class="bq-in" id="cvTxt" style="flex:1" placeholder="Cavabını ingiliscə yaz və Enter"><button class="btn" id="cvSend">Göndər</button></div></details></div>`;
+  $('#cvBack').addEventListener('click',()=>{cvStop();skRender();});
+  $('#cvRep').addEventListener('click',()=>{const q=cvCurQ();if(q)cvSay(q,()=>cvListen());});
+  $('#cvAz').addEventListener('click',()=>{$('#cvTip').innerHTML='🇦🇿 '+esc(t.q[Math.min(CV.i,t.q.length-1)].az);});
+  $('#cvHelp').addEventListener('click',()=>{$('#cvTip').innerHTML='Belə başla: <b>'+esc(t.q[Math.min(CV.i,t.q.length-1)].h)+'</b>';});
+  $('#cvMic').addEventListener('click',()=>CV.listening?cvAbort(true):cvListen());
+  $('#cvSkip').addEventListener('click',()=>{cvAbort(false);cvAnswer('');});
+  const send=()=>{const v=$('#cvTxt').value.trim();if(!v)return;$('#cvTxt').value='';cvAbort(false);cvAnswer(v,true);};
+  $('#cvSend').addEventListener('click',send);$('#cvTxt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
+  cvAsk(t.q[0].q);
+}
+function cvCurQ(){const m=[...CV.log].reverse().find(x=>x.who==='emma');return m&&m.text;}
+function cvBubble(who,text){
+  const c=$('#cvChat');if(!c)return;const me=who==='me';
+  const d=el('div',null,`<div style="font-size:.75rem;color:var(--muted);margin-bottom:2px">${me?'Sən':'Emma'}</div>${esc(text)}`);
+  d.style.cssText=`align-self:${me?'flex-end':'flex-start'};max-width:82%;padding:10px 14px;border-radius:14px;line-height:1.5;${me?'background:var(--accent);color:#fff':'background:var(--surface-2)'}`;
+  if(!me){d.style.cursor='pointer';d.title='Bas — yenidən dinlə';d.addEventListener('click',()=>cvSay(text));}
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+function cvAsk(text,pre){
+  const full=(pre?pre+' ':'')+text;CV.log.push({who:'emma',text:full});cvBubble('emma',full);
+  $('#cvPos').textContent=Math.min(CV.i+1,CV.t.q.length)+' / '+CV.t.q.length;$('#cvTip').innerHTML='';
+  $('#cvHeard').innerHTML='<i>Emma danışır…</i>';cvSay(full,()=>cvListen());
+}
+function cvListen(){
+  if(CV.listening||!$('#cvChat'))return;
+  if(!speechAvailable()){$('#cvHeard').innerHTML='Nitq tanıma yoxdur — cavabını aşağıda yaz.';return;}
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  CV.listening=true;$('#cvMic').classList.add('on');$('#cvMic').textContent='■ Bitirdim';$('#cvHeard').innerHTML='<i>dinləyirəm… danış</i>';
+  if(window.__NATIVE_SPEECH__&&NATIVE){NATIVE.postMessage({cmd:'listen',pause:3});return;}
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  try{webRec=new R();webRec.lang='en-US';webRec.interimResults=true;let txt='';
+    webRec.onresult=e=>{txt=[...e.results].map(r=>r[0].transcript).join(' ');cvSpeech({status:'partial',text:txt});};
+    webRec.onend=()=>cvSpeech({status:'final',text:txt});webRec.onerror=e=>cvSpeech({status:'error',text:e.error});webRec.start();
+  }catch(e){cvSpeech({status:'error',text:String(e)});}
+}
+function cvAbort(finish){
+  if(!CV.listening)return;
+  if(finish&&window.__NATIVE_SPEECH__&&NATIVE){NATIVE.postMessage({cmd:'stop'});return;} // native «final» göndərəcək
+  if(finish&&webRec){try{webRec.stop();}catch(e){}return;}
+  CV.listening=false;$('#cvMic')&&($('#cvMic').classList.remove('on'),$('#cvMic').textContent='🎤 Danış');
+  if(window.__NATIVE_SPEECH__&&NATIVE)NATIVE.postMessage({cmd:'stop'});if(webRec){try{webRec.abort();}catch(e){}webRec=null;}
+}
+function cvStop(){cvAbort(false);CV.t=null;if('speechSynthesis' in window)speechSynthesis.cancel();}
+function cvSpeech(m){
+  if(!CV.listening)return;
+  if(m.status==='listening')$('#cvHeard').innerHTML='<i>dinləyirəm… danış</i>';
+  else if(m.status==='partial')$('#cvHeard').innerHTML='<b>'+esc(m.text)+'</b>';
+  else if(m.status==='final'){CV.listening=false;webRec=null;$('#cvMic').classList.remove('on');$('#cvMic').textContent='🎤 Danış';
+    if(!m.text){$('#cvHeard').innerHTML='Heç nə eşitmədim — 🎤 bas və yenidən danış.';return;}cvAnswer(m.text);}
+  else if(m.status==='error'){CV.listening=false;webRec=null;$('#cvMic').classList.remove('on');$('#cvMic').textContent='🎤 Danış';$('#cvHeard').innerHTML='<span style="color:var(--bad)">'+esc(m.text||'xəta')+'</span> — cavabı aşağıda yaza bilərsən.';}
+}
+const CV_REACT={short:["Okay.","I see."],mid:["Oh, nice!","I see.","That's interesting.","Really? Cool."],long:["Great answer, thank you!","Wow, that's interesting!","Thanks for telling me that.","Nice, I like that."]};
+const cvPick=a=>a[Math.floor(Math.random()*a.length)];
+function cvAnswer(text,typed){
+  const t=CV.t;if(!t)return;$('#cvHeard').innerHTML='';
+  const q=t.q[CV.i],n=(text.match(/[A-Za-z']+/g)||[]).length;
+  if(text){CV.log.push({who:'me',text,n,typed:!!typed});cvBubble('me',text);}
+  // qısa cavab → bir dəfə əlavə sual; sonra növbəti sual
+  if(text&&n<6&&!CV.followed&&q.more){CV.followed=true;$('#cvTip').innerHTML='💡 Daha uzun cavab ver: 2–3 cümlə. Məsələn: <b>'+esc(q.h)+'</b>';setTimeout(()=>cvAsk(q.more,cvPick(CV_REACT.short)),500);return;}
+  CV.followed=false;CV.i++;
+  const r=!text?'':n>=15||/\bbecause\b|\bso\b|\bbut\b/i.test(text)?cvPick(CV_REACT.long):cvPick(CV_REACT.mid);
+  if(CV.i<t.q.length)setTimeout(()=>cvAsk(t.q[CV.i].q,r),500);else setTimeout(()=>cvEnd(r),500);
+}
+function cvEnd(r){
+  const t=CV.t,me=CV.log.filter(x=>x.who==='me'),words=me.reduce((a,x)=>a+x.n,0),avg=me.length?Math.round(words/me.length):0,longest=me.reduce((a,x)=>x.n>(a?a.n:0)?x:a,null);
+  const bye=(r?r+' ':'')+"That's all for today. It was nice talking to you. Bye!";CV.log.push({who:'emma',text:bye});cvBubble('emma',bye);cvSay(bye);
+  const transcript=CV.log.map(x=>(x.who==='me'?'ME: ':'EMMA: ')+x.text).join('\n');
+  if(me.length){(S.speaking||(S.speaking=[])).push({id:'sp'+Date.now(),task:'cv-'+t.id,title:'Söhbət: '+t.title,at:new Date().toISOString(),dur:Math.round((Date.now()-CV.t0)/1000),text:transcript,typed:me.every(x=>x.typed)});markDay('speak');save();}
+  const tip=avg<8?'Cavabların çox qısadır. Hər cavaba bir səbəb əlavə et: <b>because …</b>, ya da nümunə: <b>for example …</b>':avg<15?'Yaxşıdır! İndi hər cavabı 2–3 cümləyə çatdır: fikir + səbəb + nümunə.':'Əla! Cavabların IELTS Part 1 uzunluğundadır. İndi daha çox bağlayıcı işlət: but, so, also.';
+  const box=el('div','card',`<div class="eyebrow">Söhbət bitdi ✓</div><div class="row" style="gap:18px;margin:8px 0;flex-wrap:wrap"><div><b class="num" style="font-size:1.6rem">${me.length}</b><div class="muted" style="font-size:.8rem">cavab</div></div><div><b class="num" style="font-size:1.6rem">${words}</b><div class="muted" style="font-size:.8rem">söz danışdın</div></div><div><b class="num" style="font-size:1.6rem">${avg}</b><div class="muted" style="font-size:.8rem">söz / cavab</div></div></div>
+  <div style="margin-bottom:8px">${tip}</div>${longest?`<div class="muted" style="font-size:.88rem">Ən uzun cavabın: «${esc(longest.text)}»</div>`:''}
+  <div class="muted" style="font-size:.8rem;margin-top:6px">Transcript Mac-in nitq tanımasıdır — bəzi sözlər səhv eşidilə bilər. Tətbiq tələffüzü və qrammatikanı yoxlamır.</div>
+  <div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn primary" id="cvAgain">Yenidən</button><button class="btn" id="cvCopy">Müəllim üçün kopyala (ChatGPT/Claude)</button><button class="btn ghost" id="cvList">Mövzular</button></div>`);
+  box.style.marginTop='12px';$('#skBody').appendChild(box);box.scrollIntoView({behavior:'smooth'});
+  ['cvMic','cvSkip','cvRep','cvAz','cvHelp'].forEach(i=>$('#'+i)&&($('#'+i).disabled=true));
+  $('#cvAgain').addEventListener('click',()=>cvOpen(t.id));$('#cvList').addEventListener('click',()=>{cvStop();skRender();});
+  $('#cvCopy').addEventListener('click',()=>{const txt=`You are an IELTS Speaking teacher. My level is about A2–B1, my first language is Azerbaijani. Give feedback in Azerbaijani (examples in English).\n\nThis is a short conversation (IELTS Part 1 style). My answers are an automatic transcript and may contain recognition mistakes.\n\n${transcript}\n\nPlease give: 1) my 5 most important grammar mistakes with corrections, 2) better versions of my 3 shortest answers (keep my ideas, A2–B1 level), 3) 5 useful phrases for this topic.`;
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Kopyalandı — ChatGPT və ya Claude-a yapışdır')).catch(()=>{prompt('Kopyala:',txt);});});
+}
+{const _sp=window.__speech;window.__speech=m=>{if(CV.listening&&m&&m.status!=='exported')return cvSpeech(m);return _sp(m);};}
 function skSpeak(){
   const B=$('#skBody'),groups=[...new Set(SPEAKING.map(t=>t.part))];
   B.innerHTML=`<div class="muted" style="font-size:.88rem;margin-bottom:10px">Səsini yaz, dinlə, təkrar cavab ver və müqayisə et. Tətbiq tələffüzü və IELTS Speaking balını ÖLÇMÜR; transcript yalnız Mac-də nitq tanıma icazəsi varsa çıxır.</div>`+
-  groups.map(gp=>`<div class="gl-h">${esc(gp)}</div><div class="sk-grid">${SPEAKING.filter(t=>t.part===gp).map(t=>{const n=(S.speaking||[]).filter(x=>x.task===t.id).length;return `<div class="card tc-card" data-s="${t.id}"><div class="sk-meta"><span>${t.level}</span>${t.prep?`<span>hazırlıq ${t.prep}s</span>`:''}<span>${t.secs}s danışıq</span></div><div style="font-weight:700">${esc(t.title)}</div>${n?`<div style="font-size:.82rem;margin-top:6px;color:var(--good)">${n} yazı</div>`:''}</div>`;}).join('')}</div>`).join('');
+  cvList()+groups.map(gp=>`<div class="gl-h">${esc(gp)}</div><div class="sk-grid">${SPEAKING.filter(t=>t.part===gp).map(t=>{const n=(S.speaking||[]).filter(x=>x.task===t.id).length;return `<div class="card tc-card" data-s="${t.id}"><div class="sk-meta"><span>${t.level}</span>${t.prep?`<span>hazırlıq ${t.prep}s</span>`:''}<span>${t.secs}s danışıq</span></div><div style="font-weight:700">${esc(t.title)}</div>${n?`<div style="font-size:.82rem;margin-top:6px;color:var(--good)">${n} yazı</div>`:''}</div>`;}).join('')}</div>`).join('');
   B.querySelectorAll('[data-s]').forEach(c=>c.addEventListener('click',()=>spOpen(c.dataset.s)));
+  B.querySelectorAll('[data-cv]').forEach(c=>c.addEventListener('click',()=>cvOpen(c.dataset.cv)));
 }
 function spOpen(id,custom){
   const t=custom||SPEAKING.find(x=>x.id===id),B=$('#skBody');skStop();const tid=t.id;
