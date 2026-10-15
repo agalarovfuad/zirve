@@ -2230,7 +2230,7 @@ function phrOpen(){
 }
 function phrOld(L){
   const pd=L[0]?L[0].pd:pday(),st=S.phrSt||{};
-  const prev=PHRASES.filter(x=>x.pd<pd);
+  const prev=PHRASES.filter(x=>x.pd<pd&&st[x.en]); // yalnız testində həqiqətən görülən ifadələr
   const w=x=>{const y=st[x.en]||{ok:0,bad:0};return y.bad*2-y.ok+Math.random()*.9;};
   return prev.sort((a,b)=>w(b)-w(a)).slice(0,10);
 }
