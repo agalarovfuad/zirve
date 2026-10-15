@@ -866,7 +866,9 @@ function unitTitle(p,u){
 const isDone=(pid,u)=>S.done.includes(ukey(pid,u));
 const partDone=pid=>units(P(pid)).every(u=>isDone(pid,u));
 const partUnlocked=pid=>pid===1||partDone(pid-1);
-function unitUnlocked(pid,u){if(!partUnlocked(pid))return false;const us=units(P(pid)),i=uIndex(P(pid),u);return i<=0||isDone(pid,us[i-1]);}
+function unitUnlocked(pid,u){if(!partUnlocked(pid))return false;const us=units(P(pid)),i=uIndex(P(pid),u);if(planBlocks(pid,u))return false;return i<=0||isDone(pid,us[i-1]);}
+// plan günü bir dərsə bağlıdır: plan bitməyincə ondan sonrakı dərslər açılmır (Fuad, 2026-10-15)
+function planBlocks(pid,u){const pin=S.v2&&S.v2.active&&S.v2.pin;return !!(pin&&pin.pd===((S.v2.pday)||1)&&pin.p===pid&&uIndex(P(pid),u)>uIndex(P(pid),pin.u));}
 const partPct=pid=>{const us=units(P(pid));return Math.round(us.filter(u=>isDone(pid,u)).length/us.length*100);};
 const totalUnits=()=>PARTS.reduce((a,p)=>a+units(p).length,0);
 const lessonOfWord=w=>{const r=w[0];const pid=r<=3000?1:2,idx=(r<=3000?r:r-3000)-1;const B=bounds(P(pid));for(let i=0;i<B.length;i++)if(idx<B[i][1])return {p:pid,n:i+1};return {p:pid,n:B.length};};
@@ -979,7 +981,7 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
-  if(S.v2){gramMigrate();if(!S.v2.phr1&&typeof PHRASES!=='undefined'){phrAddSrs(PHRASES.filter(x=>x.pd<(S.v2.pday||1)),today());S.v2.phr1=true;persist();}
+  if(S.v2){gramMigrate();if(v2on())planPin();if(!S.v2.phr1&&typeof PHRASES!=='undefined'){phrAddSrs(PHRASES.filter(x=>x.pd<(S.v2.pday||1)),today());S.v2.phr1=true;persist();}
   if(!S.v2.fixRead1&&S.pdone&&S.pdone[1]){S.pdone[1].read=true;S.v2.fixRead1=true;persist();}
   if(!S.v2.pday){S.v2.pday=1;S.pdone={1:{vocab:true},2:{vocab:!!((S.daylog||{})['2026-10-08']||{}).vocab}};persist();}
   if(!S.v2.hardCut1&&S.hard){const keep=new Set(['remain','more','vote','teacher','feel','allow','government','general','likely','whether','talk','over','difficult','will','wait','home','cause','nothing']);snapshot('pre-hardcut-'+today());Object.keys(S.hard).forEach(k=>{if(!keep.has(k))delete S.hard[k];});S.v2.hardCut1=true;persist();}
@@ -1077,7 +1079,7 @@ function renderGrid(){
     const lt=unitTitle(p,u),sc=lastScore(id,u),ok=hasContent(p,u),cur=S.cursor.p===id&&uEq(S.cursor.u,u),unl=unitUnlocked(id,u),done=isDone(id,u);
     const t=el('button','tile'+(u.k==='r'?' rev':u.k==='s'?' spk':u.k==='e'?' exam':u.k==='b'?' big':u.k==='h'?' hardt':'')+(done?' done':'')+(cur?' cur':'')+(ok?'':' soon')+(unl?'':' lk'));
     t.innerHTML=`<div class="n">${esc(lt.t)}</div><div class="rg">${esc(lt.s)}</div><div class="sc"><i style="width:${sc??0}%"></i></div>`+(sc!=null?`<span class="badge num">${sc}%</span>`:(unl?'':`<span class="badge lkb">${ICO('i-lock')}</span>`))+(unitText(p,u)?'<span class="txt">📖</span>':'')+(ok?'':'<span class="txt">hazırlanır</span>');
-    t.addEventListener('click',()=>{if(!unl&&u.k!=='e'){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
+    t.addEventListener('click',()=>{if(!unl&&u.k!=='e'){t.classList.remove('deny');void t.offsetWidth;t.classList.add('deny');toast(!un?'Kilidli — əvvəlki pilləni bitir':planBlocks(id,u)?'Kilidli — əvvəl Plan '+pday()+'-in bütün hissələrini bitir, sonra bu dərs açılır':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}openUnit(id,u,'words');});
     frag.appendChild(t);
   });
   g.appendChild(frag);
@@ -1114,7 +1116,7 @@ $('#wOrder').addEventListener('click',()=>{WT.shuffled=false;$('#wOrder').hidden
 // ---------- unit (lesson / review) ----------
 function openUnit(pid,u,tab){
   const p=P(pid);if(!u)return;
-  if(!unitUnlocked(pid,u)&&u.k!=='e'){toast(!partUnlocked(pid)?'Kilidli — əvvəlki pilləni bitir':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}
+  if(!unitUnlocked(pid,u)&&u.k!=='e'){toast(!partUnlocked(pid)?'Kilidli — əvvəlki pilləni bitir':planBlocks(pid,u)?'Kilidli — əvvəl Plan '+pday()+'-in bütün hissələrini bitir, sonra növbəti dərs açılır':'Kilidli — əvvəlki addımı 90%+ ilə bitir');return;}
   if(u.k==='h'){hardReviewStart(pid,u);return;}
   if(view==='lesson'&&(pid!==curPart||!uEq(u,curU))){plStop();readReset();}
   curPart=pid;curU=u;
@@ -1154,7 +1156,7 @@ function openUnit(pid,u,tab){
   $('#testDesc').innerHTML=u.k==='r'?`${nq} sual · ${mins} dəqiqə · dərs ${unitLessons(u)[0]}–${unitLessons(u)[1]}-in bütün ${cnt} sözü, hər biri bir dəfə. <b>${PASS}%+</b> = təkrar bitdi, növbəti dərs açılır.`:`${nq} sual · ${mins} dəqiqə · ${nq-nr} sual bu dərsdən (${cnt} söz), ${nr} sual əvvəlkilərdən. Sual azərbaycanca verilir, ingiliscəsini seçirsən; cavabdan sonra söz səslənir. Səhvlər <b>Çətin sözlər</b>ə düşür. <b>${PASS}%+</b> = dərs bitdi, növbəti açılır. Klaviaturada <b>1 2 3 4</b>.`;}
   $('#testIntro').hidden=!ok||!unl;$('#testRun').hidden=true;$('#testEnd').hidden=true;
   const ts=$('#testSoon');ts.hidden=ok&&unl;
-  ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`:'Bu dərsin testi hazırlanır.')+'</div>';
+  ts.innerHTML=ICO('i-lock')+'<div>'+(!partUnlocked(pid)?'Bu pillə kilidlidir — əvvəlki pilləni bitir.':!unl?(planBlocks(pid,u)?`Kilidlidir — əvvəl Plan ${pday()}-in bütün hissələrini bitir, sonra bu dərs açılır.`:`Kilidlidir — əvvəlki addımı ${PASS}%+ ilə bitir, bu açılacaq.`):'Bu dərsin testi hazırlanır.')+'</div>';
   $('#sndTog').classList.toggle('on',S.sound!==false);
   setTab(u.k==='e'?'exam':u.k==='b'&&(tab==='words'||tab==='test'||!tab)?'big':u.k==='s'&&(tab==='words'||!tab)?'speak':(tab||'words'));
   show('lesson');
@@ -1174,6 +1176,7 @@ $('#lNext').addEventListener('click',()=>{const x=nextUnit(curPart,curU);if(x)op
 $('#lGoTest').addEventListener('click',()=>setTab('test'));
 $('#lGoText').addEventListener('click',()=>setTab('text'));
 function markDone(pid,u){
+  if(typeof planPin==='function')planPin();
   const k=ukey(pid,u);if(!S.done.includes(k))S.done.push(k);
   if(S.v2&&!S.v2.active&&k===S.v2.arm)v2Activate();
   if(u.k==='l')srsAddLesson(pid,u.n,1);
@@ -2177,7 +2180,11 @@ function gstepN(id){return ((S.gstep||{})[id])||0;}
 function gramWeekText(w){const out=[];for(let pd=(w-1)*7+1;pd<=w*7;pd++){const x=gramPlan(pd);if(x&&!out.some(o=>o.g.id===x.g.id&&o.kind===x.kind))out.push(x);}return out.map(x=>GP_LABEL[x.kind]+': '+x.g.title).join(' · ');}
 function writeDone(id){return (S.writing||[]).some(x=>x.task===id);}
 function speakDone(id){return (S.speaking||[]).some(x=>x.task===id);}
-function curLessonText(){const c=S.cursor;const p=P(c.p);if(p.kind!=='vocab')return null;const ls=unitLessons(c.u);return {p:c.p,u:c.u,label:unitTitle(p,c.u).t};}
+function planPin(){if(!v2on())return null;const pd=pday();if(!S.v2.pin||S.v2.pin.pd!==pd){let u=S.cursor.u,p=S.cursor.p;
+    // ilk dəfə: bu planın sözləri artıq bitibsə, plan sonuncu bitən dərsə bağlanır (irəli qaçmasın)
+    if(!S.v2.pin&&dayLog().vocab&&S.done.length){const m=S.done[S.done.length-1].match(/^(\d+)-([a-z]?)(\d+)$/);if(m){p=+m[1];u={k:m[2]||'l',n:+m[3]};}}
+    S.v2.pin={pd,p,u};persist();}return S.v2.pin;}
+function curLessonText(){const c=planPin()||S.cursor;const p=P(c.p);if(p.kind!=='vocab')return null;const ls=unitLessons(c.u);return {p:c.p,u:c.u,label:unitTitle(p,c.u).t};}
 // oxu: cari dərsin mətni oxunubsa, yenidən onu yox — ən zəif köhnə mətni (son 5 gündə oxunmayan) təkrar ver
 function readPick(cl){
   if(!cl)return null;const key=ukey(cl.p,cl.u);if(!S.reading[key])return {...cl,rev:false};
@@ -2192,9 +2199,9 @@ function todayPlan(){
   const gp=gramPlan(pday());const dayIdx=(pday()-1)%7;
   const wtask=WRITING.find(t=>(W.write||[]).includes(t.id)&&!writeDone(t.id))||WRITING.find(t=>(W.write||[]).includes(t.id));
   const stask=SPEAKING.find(t=>(W.speak||[]).includes(t.id)&&!speakDone(t.id))||SPEAKING.find(t=>(W.speak||[]).includes(t.id));
-  const cl=curLessonText(),rp=readPick(cl);const light=dayIdx===6;
+  const cl=curLessonText(),rp=readPick(cl),clDone=!!(cl&&isDone(cl.p,cl.u));if(cl&&!!L.vocab!==clDone){L.vocab=clDone;persist();}const light=dayIdx===6;
   const items=[
-    {k:'vocab',t:'Söz və təkrar',m:slots[0][1],d:(due&&!L.rev?'1) '+due+' söz təkrar · 2) ':L.rev?'Təkrar ✓ · indi: ':'')+(cl?cl.label+': ~'+newN+' yeni söz + test (90%)':''),go:()=>{if(due&&!L.rev)srsStart();else if(cl)openUnit(cl.p,cl.u,'words');}},
+    {k:'vocab',t:'Söz və təkrar',m:slots[0][1],d:clDone?cl.label+' bitdi ✓ — növbəti dərs növbəti planda açılacaq'+(due?' · istəsən '+due+' söz təkrar':''):(due&&!L.rev?'1) '+due+' söz təkrar · 2) ':L.rev?'Təkrar ✓ · indi: ':'')+(cl?cl.label+': ~'+newN+' yeni söz + test (90%)':''),go:()=>{if(clDone){if(due)srsStart();else toast('Bu planın sözləri bitib ✓');}else if(due&&!L.rev)srsStart();else if(cl)openUnit(cl.p,cl.u,'words');}},
     ...(phrDay().length?[{k:'phr',t:'İfadələr',m:15,d:phrDay().length+' gündəlik ifadə · '+phrDay()[0].topic,go:()=>{SK2.tab='today';skRender();phrOpen();}}]:[]),
     {k:'gram',t:'Qrammatika',m:slots[1][1],d:gp&&gp.kind==='step'?'Addım '+(gp.k+1)+'/'+gp.g.steps.length+' · '+gp.g.title+': '+gp.g.steps[gp.k].h+' — oxu, sonra 5 asan sual':gp&&gp.g.steps?'Təkrar · '+gp.g.title+' — 10 sual':gp?GP_LABEL[gp.kind]+' · '+gp.g.title+(gp.kind==='learn'?' — dərsi oxu, sonra məşq 70%+':gp.kind==='practice'?' — kitab formatında məşq 70%+':' — xülasə və məşq 70%+'):'Qrammatika',go:()=>{SK2.tab='gram';skRender();if(!gp)return;if(gp.kind==='learn'||gp.g.steps)gramOpen(gp.g.id);else if(gp.kind==='practice')gramBook(gp.g.id);else gramReview(gp.g.id);}},
     {k:'listen',t:'Listening',m:slots[2][1],d:bcNext()?'British Council: '+bcNext().title+' ('+bcNext().level+') · 5 sual':(cl?cl.label+' — mətnin səsini dinlə':''),go:()=>{if(bcNext())bcOpen(bcNext().id);else if(cl)openUnit(cl.p,cl.u,'text');}},
@@ -2295,11 +2302,10 @@ function skToday(){
   const allDone=P2.items.every(x=>L[x.k]);
   B.innerHTML=`<div class="card"><div class="row" style="justify-content:space-between;gap:10px;margin-bottom:6px"><div><div class="eyebrow">Plan ${pday()} · həftə ${P2.wk}, gün ${(pday()-1)%7+1}/7</div><div class="muted" style="font-size:.86rem">${esc(P2.W.goal)}</div></div>
   <div class="row" style="gap:6px"><button class="btn sm${P2.mode==='3h'?' primary':''}" data-mode="3h">3 saat</button><button class="btn sm${P2.mode==='90m'?' primary':''}" data-mode="90m">90 dəq</button></div></div>
-  <div id="skItems">${P2.items.map((x,i)=>`<div class="sk-item${L[x.k]?' done':''}" data-i="${i}"><button class="ck" data-done="${x.k}" title="Bitdi kimi işarələ">${L[x.k]?'✓':''}</button><div><div class="t">${esc(x.t)} <span class="muted" style="font-weight:400;font-size:.82rem">· ${x.m} dəq</span></div><div class="d">${esc(x.d||'')}</div></div><button class="btn sm" data-go="${i}">Aç</button></div>`).join('')}</div></div>
-  ${allDone?`<div class="card" style="margin-top:12px;border-color:var(--good);border-width:2px;text-align:center"><b>Plan ${pday()} bitdi ✓</b><div class="muted" style="font-size:.88rem;margin:4px 0 10px">Növbəti plan yalnız indi açılır. İstəsən elə bu gün davam et.</div><button class="btn primary" id="pNext">Növbəti plana keç →</button></div>`:`<div class="muted" style="font-size:.85rem;margin-top:10px">Növbəti plan bu planın bütün hissələri bitəndə açılacaq.</div>`}
+  <div id="skItems">${P2.items.map((x,i)=>`<div class="sk-item${L[x.k]?' done':''}" data-i="${i}"><button class="ck" tabindex="-1" style="pointer-events:none">${L[x.k]?'✓':''}</button><div><div class="t">${esc(x.t)} <span class="muted" style="font-weight:400;font-size:.82rem">· ${x.m} dəq</span></div><div class="d">${esc(x.d||'')}</div></div><button class="btn sm" data-go="${i}">Aç</button></div>`).join('')}</div></div>
+  ${allDone?`<div class="card" style="margin-top:12px;border-color:var(--good);border-width:2px;text-align:center"><b>Plan ${pday()} bitdi ✓</b><div class="muted" style="font-size:.88rem;margin:4px 0 10px">Növbəti plan yalnız indi açılır. İstəsən elə bu gün davam et.</div><button class="btn primary" id="pNext">Növbəti plana keç →</button></div>`:`<div class="muted" style="font-size:.85rem;margin-top:10px">Növbəti plan və növbəti dərs bu planın bütün hissələri bitəndə açılacaq.</div>`}
   <div class="card" style="margin-top:12px"><div class="eyebrow">Bu həftə yoxlama</div><div style="margin-top:4px">${esc(P2.W.check)}</div><div class="muted" style="font-size:.85rem;margin-top:6px">Bacarıq: ${esc(P2.W.cando)}</div></div>`;
   B.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{S.v2.mode=b.dataset.mode;save();skRender();}));
-  B.querySelectorAll('[data-done]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.done;const L2=dayLog();L2[k]=!L2[k];save();skRender();}));
   B.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>P2.items[+b.dataset.go].go()));
   if($('#pNext'))$('#pNext').addEventListener('click',()=>{S.v2.pday=pday()+1;save();toast('Plan '+S.v2.pday+' açıldı');skRender();renderDayCard();});
 }
