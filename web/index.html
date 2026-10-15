@@ -2574,12 +2574,36 @@ function recorder(onDone,onErr,onState){
 const CV={t:null,i:0,log:[],followed:false,listening:false,t0:0,busy:false};
 function cvDone(id){return (S.speaking||[]).filter(x=>x.task==='cv-'+id).length;}
 function cvNext(){if(typeof CONV==='undefined')return null;return CONV.find(t=>!cvDone(t.id))||CONV.slice().sort((a,b)=>cvDone(a.id)-cvDone(b.id))[0];}
-function cvSay(text,cb){
+let CV_AUDIO=null,CV_TTS={};
+function cvSay(text,cb,slow){
   let fired=false;const go=()=>{if(fired)return;fired=true;cb&&cb();};
-  if(!('speechSynthesis' in window)){setTimeout(go,300);return;}
-  speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang='en-US';if(voice)u.voice=voice;u.rate=.85;
-  u.onend=()=>setTimeout(go,250);u.onerror=()=>go();speechSynthesis.speak(u);
-  setTimeout(go,1500+text.split(' ').length*520); // onend gəlməsə də davam etsin
+  if(CV_AUDIO){CV_AUDIO.pause();CV_AUDIO=null;}if('speechSynthesis' in window)speechSynthesis.cancel();
+  const browser=()=>{if(!('speechSynthesis' in window)){setTimeout(go,300);return;}
+    const u=new SpeechSynthesisUtterance(text);u.lang='en-US';if(voice)u.voice=voice;u.rate=slow?.7:.85;
+    u.onend=()=>setTimeout(go,250);u.onerror=()=>go();speechSynthesis.speak(u);setTimeout(go,1500+text.split(' ').length*560);};
+  if(!NATIVE){browser();return;}
+  const id='t'+Date.now()+Math.random().toString(36).slice(2,6);let done=false;
+  const to=setTimeout(()=>{if(done)return;done=true;delete CV_TTS[id];browser();},9000);
+  CV_TTS[id]=m=>{if(done)return;done=true;clearTimeout(to);delete CV_TTS[id];
+    if(m.error||!m.data){browser();return;}
+    const a=new Audio('data:audio/mpeg;base64,'+m.data);CV_AUDIO=a;a.onended=()=>setTimeout(go,250);a.onerror=()=>browser();a.play().catch(()=>browser());};
+  NATIVE.postMessage({cmd:'say',id,text,voice:'en-US-JennyNeural',rate:slow?'-30%':'-12%'});
+}
+window.__tts=m=>{const f=CV_TTS[m&&m.id];if(f)f(m);};
+// 2) Emma-nın «beyni»: Mac-dakı Apple modeli (pulsuz, offline). Yoxdursa — hazır suallarla işləyir.
+let CV_AI={state:'unknown',reason:'',wait:null};
+window.__chat=m=>{
+  if(m.status==='avail'){CV_AI.state=m.reason==='available'?'yes':'no';CV_AI.reason=m.reason;cvAiBadge();}
+  else if(m.status==='ready'){CV_AI.state='yes';cvAiBadge();}
+  else if(m.status==='unavailable'){CV_AI.state='no';CV_AI.reason=m.reason;cvAiBadge();}
+  else if((m.status==='reply'||m.status==='error')&&CV_AI.wait&&CV_AI.wait.id===m.id){const w=CV_AI.wait;CV_AI.wait=null;clearTimeout(w.to);w.cb(m.status==='reply'?String(m.text||'').replace(/[*#_`]/g,'').trim():null);}
+};
+if(NATIVE)try{NATIVE.postMessage({cmd:'chat-avail'});}catch(e){}
+function cvAiBadge(){const b=$('#cvAi');if(!b)return;b.innerHTML=CV_AI.state==='yes'?'<span style="color:var(--good)">● Emma cavabını anlayır (Mac-dakı süni intellekt)</span>':'<span class="muted">● Hazır suallar rejimi'+(CV_AI.reason&&CV_AI.reason!=='old-macos'?' — Apple Intelligence hazır deyil':'')+'</span>';}
+function cvAiAsk(prompt,cb){
+  if(CV_AI.state!=='yes'||!NATIVE){cb(null);return;}
+  const id='c'+Date.now();CV_AI.wait={id,cb,to:setTimeout(()=>{if(CV_AI.wait&&CV_AI.wait.id===id){CV_AI.wait=null;cb(null);}},12000)};
+  NATIVE.postMessage({cmd:'chat',id,text:prompt});
 }
 function cvList(){
   if(typeof CONV==='undefined')return '';
@@ -2589,22 +2613,23 @@ function cvList(){
 function cvOpen(id){
   const t=CONV.find(x=>x.id===id),B=$('#skBody');skStop();cvStop();
   Object.assign(CV,{t,i:0,log:[],followed:false,t0:Date.now(),busy:false});
+  if(NATIVE&&CV_AI.state==='yes')NATIVE.postMessage({cmd:'chat-start',instructions:`You are Emma, a friendly English teacher from London. You are having a short spoken conversation with Fuad, an adult A2-level English learner from Baku, Azerbaijan. Topic: ${t.en}. Rules: use simple A2 English, common words, short sentences, maximum 30 words per reply. Always react to what Fuad actually said, using his own words, so he feels heard. If his sentence has a grammar mistake, repeat his idea correctly once in a natural way (for example: "Oh, you went to the cinema yesterday!"), but never explain grammar. Ask only one question at a time. His words come from speech recognition and can have small errors, so guess what he meant. No emojis, no lists, no Azerbaijani.`});
   B.innerHTML=`<button class="btn sm ghost" id="cvBack">← Speaking</button>
   <div class="card" style="margin-top:10px"><div class="row" style="justify-content:space-between"><div><div class="eyebrow">Söhbət · ${esc(t.level)}</div><h3 style="margin:2px 0">${esc(t.title)} <span class="muted" style="font-weight:400">· ${esc(t.en)}</span></h3></div><div class="muted num" id="cvPos"></div></div>
-  <div id="cvChat" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;max-height:52vh;overflow:auto;padding:4px"></div>
+  <div id="cvAi" style="font-size:.8rem;margin-top:4px"></div><div id="cvChat" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;max-height:52vh;overflow:auto;padding:4px"></div>
   <div id="cvHeard" class="muted" style="min-height:1.6em;margin-top:10px;text-align:center"></div>
-  <div class="row" style="justify-content:center;gap:10px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" id="cvRep">▶ Sualı təkrar et</button><button class="btn sm" id="cvAz">Azərbaycanca</button><button class="btn sm" id="cvHelp">Kömək</button><button class="rec-btn" id="cvMic">🎤 Danış</button><button class="btn sm ghost" id="cvSkip">Keç →</button></div>
+  <div class="row" style="justify-content:center;gap:10px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" id="cvRep">🐢 Yavaş təkrar et</button><button class="btn sm" id="cvAz">Azərbaycanca</button><button class="btn sm" id="cvHelp">Kömək</button><button class="rec-btn" id="cvMic">🎤 Danış</button><button class="btn sm ghost" id="cvSkip">Keç →</button></div>
   <div id="cvTip" class="muted" style="text-align:center;font-size:.9rem;margin-top:8px"></div>
   <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Mikrofon işləmir? Cavabı yaz</summary><div class="row" style="gap:6px;margin-top:6px"><input class="bq-in" id="cvTxt" style="flex:1" placeholder="Cavabını ingiliscə yaz və Enter"><button class="btn" id="cvSend">Göndər</button></div></details></div>`;
   $('#cvBack').addEventListener('click',()=>{cvStop();skRender();});
-  $('#cvRep').addEventListener('click',()=>{const q=cvCurQ();if(q)cvSay(q,()=>cvListen());});
+  $('#cvRep').addEventListener('click',()=>{const q=cvCurQ();if(q){cvAbort(false);cvSay(q,()=>cvListen(),true);}});
   $('#cvAz').addEventListener('click',()=>{$('#cvTip').innerHTML='🇦🇿 '+esc(t.q[Math.min(CV.i,t.q.length-1)].az);});
   $('#cvHelp').addEventListener('click',()=>{$('#cvTip').innerHTML='Belə başla: <b>'+esc(t.q[Math.min(CV.i,t.q.length-1)].h)+'</b>';});
   $('#cvMic').addEventListener('click',()=>CV.listening?cvAbort(true):cvListen());
   $('#cvSkip').addEventListener('click',()=>{cvAbort(false);cvAnswer('');});
   const send=()=>{const v=$('#cvTxt').value.trim();if(!v)return;$('#cvTxt').value='';cvAbort(false);cvAnswer(v,true);};
   $('#cvSend').addEventListener('click',send);$('#cvTxt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send();}});
-  cvAsk(t.q[0].q);
+  cvAiBadge();cvAsk(t.q[0].q);
 }
 function cvCurQ(){const m=[...CV.log].reverse().find(x=>x.who==='emma');return m&&m.text;}
 function cvBubble(who,text){
@@ -2647,21 +2672,39 @@ function cvSpeech(m){
     if(!m.text){$('#cvHeard').innerHTML='Heç nə eşitmədim — 🎤 bas və yenidən danış.';return;}cvAnswer(m.text);}
   else if(m.status==='error'){CV.listening=false;webRec=null;$('#cvMic').classList.remove('on');$('#cvMic').textContent='🎤 Danış';$('#cvHeard').innerHTML='<span style="color:var(--bad)">'+esc(m.text||'xəta')+'</span> — cavabı aşağıda yaza bilərsən.';}
 }
-const CV_REACT={short:["Okay.","I see."],mid:["Oh, nice!","I see.","That's interesting.","Really? Cool."],long:["Great answer, thank you!","Wow, that's interesting!","Thanks for telling me that.","Nice, I like that."]};
+const CV_REACT={short:["Okay.","I see."],mid:["I see.","Okay, thank you.","Thanks."],long:["Thank you, good answer!","Thanks for telling me.","Good, thank you."]};
 const cvPick=a=>a[Math.floor(Math.random()*a.length)];
 function cvAnswer(text,typed){
   const t=CV.t;if(!t)return;$('#cvHeard').innerHTML='';
   const q=t.q[CV.i],n=(text.match(/[A-Za-z']+/g)||[]).length;
   if(text){CV.log.push({who:'me',text,n,typed:!!typed});cvBubble('me',text);}
+  if(text&&CV_AI.state==='yes'){
+    const short=n<6&&!CV.followed,last=!short&&CV.i+1>=t.q.length,nextQ=short?null:last?null:t.q[CV.i+1].q;
+    const asked=[...CV.log].reverse().find(x=>x.who==='emma');const prompt=`You asked: "${asked?asked.text:q.q}"\nFuad said: "${text}"\n`+(short?`His answer is very short. React to it in a few words, then ask him one simple follow-up question about his answer so he says more.`:last?`React to what he said in one short sentence. Then thank him and say goodbye in one short sentence. Do not ask a question.`:`React to what he said in one short sentence (A2 English). Then ask him this next question in a natural way: "${nextQ}"`);
+    $('#cvHeard').innerHTML='<i>Emma düşünür…</i>';
+    cvAiAsk(prompt,reply=>{
+      if(!CV.t||CV.t!==t)return;
+      if(!reply){cvAnswerScripted(text,n);return;}
+      if(short){CV.followed=true;$('#cvTip').innerHTML='💡 Daha uzun cavab ver: 2–3 cümlə. Məsələn: <b>'+esc(q.h)+'</b>';cvAsk(reply);return;}
+      CV.followed=false;CV.i++;
+      if(last){cvEnd(null,reply);return;}
+      cvAsk(reply);
+    });
+    return;
+  }
+  cvAnswerScripted(text,n);
+}
+function cvAnswerScripted(text,n){
+  const t=CV.t,q=t.q[CV.i];
   // qısa cavab → bir dəfə əlavə sual; sonra növbəti sual
   if(text&&n<6&&!CV.followed&&q.more){CV.followed=true;$('#cvTip').innerHTML='💡 Daha uzun cavab ver: 2–3 cümlə. Məsələn: <b>'+esc(q.h)+'</b>';setTimeout(()=>cvAsk(q.more,cvPick(CV_REACT.short)),500);return;}
   CV.followed=false;CV.i++;
   const r=!text?'':n>=15||/\bbecause\b|\bso\b|\bbut\b/i.test(text)?cvPick(CV_REACT.long):cvPick(CV_REACT.mid);
   if(CV.i<t.q.length)setTimeout(()=>cvAsk(t.q[CV.i].q,r),500);else setTimeout(()=>cvEnd(r),500);
 }
-function cvEnd(r){
+function cvEnd(r,aiBye){
   const t=CV.t,me=CV.log.filter(x=>x.who==='me'),words=me.reduce((a,x)=>a+x.n,0),avg=me.length?Math.round(words/me.length):0,longest=me.reduce((a,x)=>x.n>(a?a.n:0)?x:a,null);
-  const bye=(r?r+' ':'')+"That's all for today. It was nice talking to you. Bye!";CV.log.push({who:'emma',text:bye});cvBubble('emma',bye);cvSay(bye);
+  const bye=aiBye||((r?r+' ':'')+"That's all for today. It was nice talking to you. Bye!");CV.log.push({who:'emma',text:bye});cvBubble('emma',bye);cvSay(bye);
   const transcript=CV.log.map(x=>(x.who==='me'?'ME: ':'EMMA: ')+x.text).join('\n');
   if(me.length){(S.speaking||(S.speaking=[])).push({id:'sp'+Date.now(),task:'cv-'+t.id,title:'Söhbət: '+t.title,at:new Date().toISOString(),dur:Math.round((Date.now()-CV.t0)/1000),text:transcript,typed:me.every(x=>x.typed)});markDay('speak');save();}
   const tip=avg<8?'Cavabların çox qısadır. Hər cavaba bir səbəb əlavə et: <b>because …</b>, ya da nümunə: <b>for example …</b>':avg<15?'Yaxşıdır! İndi hər cavabı 2–3 cümləyə çatdır: fikir + səbəb + nümunə.':'Əla! Cavabların IELTS Part 1 uzunluğundadır. İndi daha çox bağlayıcı işlət: but, so, also.';

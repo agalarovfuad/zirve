@@ -17,7 +17,7 @@ for s in 16 32 64 128 256 512; do
 done
 iconutil -c icns "$TMP/AppIcon.iconset" -o "$APP/Contents/Resources/AppIcon.icns"
 # binary
-swiftc -swift-version 5 -O -target arm64-apple-macosx13.0 -framework Cocoa -framework WebKit -framework Speech -framework AVFoundation "$ROOT/mac/main.swift" -o "$APP/Contents/MacOS/Zirve"
+swiftc -swift-version 5 -O -target arm64-apple-macosx13.0 -framework Cocoa -framework WebKit -framework Speech -framework AVFoundation -Xlinker -weak_framework -Xlinker FoundationModels "$ROOT/mac/main.swift" -o "$APP/Contents/MacOS/Zirve"
 codesign --force --deep --sign - "$APP" 2>/dev/null || true
 # quraşdır: yalnız /Applications-da bir nüsxə qalır (nəticələr ~/Library/Application Support/Zirve-dədir, toxunulmur)
 pkill -f "Zirvə.app/Contents/MacOS/Zirve" 2>/dev/null || true; sleep 1

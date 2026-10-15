@@ -2,6 +2,7 @@ import Cocoa
 import WebKit
 import Speech
 import AVFoundation
+import FoundationModels
 
 final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate {
     var window: NSWindow!
@@ -83,6 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
             switch cmd {
             case "listen": pauseSecs = (d["pause"] as? Double) ?? 1.5; startListening()
             case "stop": stopListening(final: true)
+            case "say": neuralSay(id: d["id"] as? String ?? "", text: d["text"] as? String ?? "", voice: d["voice"] as? String ?? "en-US-JennyNeural", rate: d["rate"] as? String ?? "-10%")
+            case "chat-avail": jsCall("__chat", ["status": "avail", "reason": chatAvail()])
+            case "chat-start": chatStart(d["instructions"] as? String ?? "")
+            case "chat": chatSay(id: d["id"] as? String ?? "", text: d["text"] as? String ?? "")
             case "openbook":
                 // Fuad-ın öz kitabını (PDF) lazım olan səhifədə açır — Chrome/Safari #page=N dəstəkləyir
                 if let file = d["file"] as? String, let page = d["page"] as? Int {
@@ -250,6 +255,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
+// --- Söhbət (Emma): neyron səs (edge-tts, pulsuz) + cihazdakı Apple modeli (FoundationModels, pulsuz, offline) ---
+var chatSessionBox: AnyObject?
+
+extension AppDelegate {
+    func jsCall(_ fn: String, _ obj: [String: Any]) {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj), let s = String(data: data, encoding: .utf8) else { return }
+        DispatchQueue.main.async { self.webView.evaluateJavaScript("window.\(fn)&&window.\(fn)(\(s))", completionHandler: nil) }
+    }
+    func edgeTTSPath() -> String? {
+        let fm = FileManager.default
+        var c = ["/opt/homebrew/bin/edge-tts", "/usr/local/bin/edge-tts"]
+        let py = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Python").path
+        if let vs = try? fm.contentsOfDirectory(atPath: py) { for v in vs.sorted() { c.insert(py + "/" + v + "/bin/edge-tts", at: 0) } }
+        return c.first { fm.isExecutableFile(atPath: $0) }
+    }
+    func neuralSay(id: String, text: String, voice: String, rate: String) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let fm = FileManager.default
+            let dir = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Zirve/tts-cache")
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            var h: UInt64 = 1469598103934665603
+            for b in (voice + "|" + rate + "|" + text).utf8 { h = (h ^ UInt64(b)) &* 1099511628211 }
+            let file = dir.appendingPathComponent(String(h, radix: 16) + ".mp3")
+            if !fm.fileExists(atPath: file.path) {
+                guard let exe = self.edgeTTSPath() else { self.jsCall("__tts", ["id": id, "error": "no-edge-tts"]); return }
+                let p = Process(); p.executableURL = URL(fileURLWithPath: exe)
+                p.arguments = ["--voice", voice, "--rate=" + rate, "--text", text, "--write-media", file.path]
+                p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
+                do { try p.run() } catch { self.jsCall("__tts", ["id": id, "error": "run"]); return }
+                let deadline = Date().addingTimeInterval(15)
+                while p.isRunning && Date() < deadline { usleep(50000) }
+                if p.isRunning { p.terminate() }
+            }
+            guard let data = try? Data(contentsOf: file), data.count > 500 else { try? fm.removeItem(at: file); self.jsCall("__tts", ["id": id, "error": "fail"]); return }
+            self.jsCall("__tts", ["id": id, "data": data.base64EncodedString()])
+        }
+    }
+    func chatAvail() -> String {
+        if #available(macOS 26.0, *) {
+            switch SystemLanguageModel.default.availability {
+            case .available: return "available"
+            case .unavailable(let r): return "\(r)"
+            @unknown default: return "unknown"
+            }
+        }
+        return "old-macos"
+    }
+    func chatStart(_ instructions: String) {
+        if #available(macOS 26.0, *), case .available = SystemLanguageModel.default.availability {
+            chatSessionBox = LanguageModelSession(instructions: instructions)
+            jsCall("__chat", ["status": "ready"])
+        } else { chatSessionBox = nil; jsCall("__chat", ["status": "unavailable", "reason": chatAvail()]) }
+    }
+    func chatSay(id: String, text: String) {
+        if #available(macOS 26.0, *), let s = chatSessionBox as? LanguageModelSession {
+            Task {
+                do {
+                    let r = try await s.respond(to: text, options: GenerationOptions(temperature: 0.7, maximumResponseTokens: 90))
+                    self.jsCall("__chat", ["status": "reply", "id": id, "text": r.content])
+                } catch { self.jsCall("__chat", ["status": "error", "id": id, "text": "\(error)"]) }
+            }
+        } else { jsCall("__chat", ["status": "error", "id": id, "text": "no-session"]) }
+    }
 }
 
 let app = NSApplication.shared
