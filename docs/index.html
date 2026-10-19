@@ -785,16 +785,16 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 </div>
 <div class="toast" id="toast"></div>
 
-<script src="words.js?v=1792069690"></script>
-<script src="texts.js?v=1792069690"></script>
-<script src="syllabus.js?v=1792069690"></script>
-<script src="speak.js?v=1792069690"></script>
-<script src="lemma.js?v=1792069690"></script>
-<script src="exams.js?v=1792069690"></script>
-<script src="listen.js?v=1792069690"></script>
+<script src="words.js?v=1792416390"></script>
+<script src="texts.js?v=1792416390"></script>
+<script src="syllabus.js?v=1792416390"></script>
+<script src="speak.js?v=1792416390"></script>
+<script src="lemma.js?v=1792416390"></script>
+<script src="exams.js?v=1792416390"></script>
+<script src="listen.js?v=1792416390"></script>
 <script src="listen-times.js"></script>
-<script src="teacher.js?v=1792069690"></script>
-<script src="grammar.js?v=1792069690"></script>
+<script src="teacher.js?v=1792416390"></script>
+<script src="grammar.js?v=1792416390"></script>
 <script src="grammar-expl.js"></script>
 <script src="grammar-sets-a.js"></script>
 <script src="grammar-sets-b.js"></script>
@@ -804,10 +804,10 @@ details.gl-more summary{cursor:pointer;font-size:.78rem;font-weight:700;letter-s
 <script src="grammar-topics-1.js"></script>
 <script src="grammar-topics-2.js"></script>
 <script src="grammar-topics-3.js"></script>
-<script src="conv.js?v=1792069690"></script>
-<script src="tasks.js?v=1792069690"></script>
-<script src="plan.js?v=1792069690"></script>
-<script src="phrases.js?v=1792069690"></script>
+<script src="conv.js?v=1792416390"></script>
+<script src="tasks.js?v=1792416390"></script>
+<script src="plan.js?v=1792416390"></script>
+<script src="phrases.js?v=1792416390"></script>
 <script src="bc-listen.js"></script>
 <script>
 (function(){
@@ -874,7 +874,7 @@ const partDone=pid=>units(P(pid)).every(u=>isDone(pid,u));
 const partUnlocked=pid=>pid===1||partDone(pid-1);
 function unitUnlocked(pid,u){if(!partUnlocked(pid))return false;const us=units(P(pid)),i=uIndex(P(pid),u);if(planBlocks(pid,u))return false;return i<=0||isDone(pid,us[i-1]);}
 // plan günü bir dərsə bağlıdır: plan bitməyincə ondan sonrakı dərslər açılmır (Fuad, 2026-10-15)
-function planBlocks(pid,u){const pin=S.v2&&S.v2.active&&S.v2.pin;return !!(pin&&pin.pd===((S.v2.pday)||1)&&pin.p===pid&&uIndex(P(pid),u)>uIndex(P(pid),pin.u));}
+function planBlocks(pid,u){const pin=S.v2&&S.v2.active&&!S.v2.off&&S.v2.pin;return !!(pin&&pin.pd===((S.v2.pday)||1)&&pin.p===pid&&uIndex(P(pid),u)>uIndex(P(pid),pin.u));}
 const partPct=pid=>{const us=units(P(pid));return Math.round(us.filter(u=>isDone(pid,u)).length/us.length*100);};
 const totalUnits=()=>PARTS.reduce((a,p)=>a+units(p).length,0);
 const lessonOfWord=w=>{const r=w[0];const pid=r<=3000?1:2,idx=(r<=3000?r:r-3000)-1;const B=bounds(P(pid));for(let i=0;i<B.length;i++)if(idx<B[i][1])return {p:pid,n:i+1};return {p:pid,n:B.length};};
@@ -987,7 +987,7 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
-  if(S.v2){gramMigrate();if(v2on())planPin();if(!S.v2.phr1&&typeof PHRASES!=='undefined'){phrAddSrs(PHRASES.filter(x=>x.pd<(S.v2.pday||1)),today());S.v2.phr1=true;persist();}
+  if(S.v2){if(!S.v2.off1){S.v2.off=true;S.v2.off1=true;persist();}gramMigrate();if(v2on())planPin();if(!S.v2.phr1&&typeof PHRASES!=='undefined'){phrAddSrs(PHRASES.filter(x=>x.pd<(S.v2.pday||1)),today());S.v2.phr1=true;persist();}
   if(!S.v2.fixRead1&&S.pdone&&S.pdone[1]){S.pdone[1].read=true;S.v2.fixRead1=true;persist();}
   if(!S.v2.pday){S.v2.pday=1;S.pdone={1:{vocab:true},2:{vocab:!!((S.daylog||{})['2026-10-08']||{}).vocab}};persist();}
   if(!S.v2.hardCut1&&S.hard){const keep=new Set(['remain','more','vote','teacher','feel','allow','government','general','likely','whether','talk','over','difficult','will','wait','home','cause','nothing']);snapshot('pre-hardcut-'+today());Object.keys(S.hard).forEach(k=>{if(!keep.has(k))delete S.hard[k];});S.v2.hardCut1=true;persist();}
@@ -2140,7 +2140,8 @@ function ieMark(kind,X){
 
 // ---------- Bacarıqlar (yeni sistem): gündəlik plan, qrammatika, Writing, Speaking, plan, hesabat ----------
 let SK2={tab:'today',rec:null,timer:null};
-const v2on=()=>!!(S.v2&&S.v2.active);
+// Fuad, 2026-10-19: plan sistemi söndürülüb — yalnız söz dərsləri, əvvəlki kimi (S.v2.off); məlumat silinmir
+const v2on=()=>!!(S.v2&&S.v2.active&&!S.v2.off);
 function skStop(){clearInterval(SK2.timer);SK2.timer=null;if(CV.t)cvStop();if(SK2.rec&&SK2.rec.stop)try{SK2.rec.stop();}catch(e){}}
 $('#skTabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;skStop();SK2.tab=b.dataset.t;skRender();});
 const dayDiff=(a,b)=>Math.round((new Date(b+'T12:00')-new Date(a+'T12:00'))/864e5);
@@ -2307,8 +2308,10 @@ function renderDayCard(){
   $('#dayGo').addEventListener('click',()=>{SK2.tab='today';go('skills');});
 }
 function skRender(){
-  if(!v2on()){$('#skBody').innerHTML='<div class="card">Yeni sistem hazırkı dərsin bitəndə açılacaq.</div>';return;}
-  const wk=planWeek();$('#skWeek').textContent='Həftə '+wk+' / '+PLAN.length+' · '+['','A2 boşluqları','B1 bacarıqları','B1 → B2 keçid','IELTS bölmələri','Tam sınaqlar'][PLAN[wk-1].m];
+  const off=!v2on();
+  document.querySelectorAll('#skTabs button').forEach(b=>{if(b.dataset.t==='today'||b.dataset.t==='plan')b.hidden=off;});
+  if(off){if(SK2.tab==='today'||SK2.tab==='plan')SK2.tab='gram';$('#skWeek').textContent='Əlavə məşqlər — istəsən';}
+  else{const wk=planWeek();$('#skWeek').textContent='Həftə '+wk+' / '+PLAN.length+' · '+['','A2 boşluqları','B1 bacarıqları','B1 → B2 keçid','IELTS bölmələri','Tam sınaqlar'][PLAN[wk-1].m];}
   document.querySelectorAll('#skTabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===SK2.tab?'true':'false'));
   ({today:skToday,gram:skGram,write:skWrite,speak:skSpeak,plan:skPlan,report:skReport})[SK2.tab]();
 }
