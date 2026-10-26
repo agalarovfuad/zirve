@@ -867,7 +867,7 @@ function unitTitle(p,u){
 const isDone=(pid,u)=>S.done.includes(ukey(pid,u));
 const partDone=pid=>units(P(pid)).every(u=>isDone(pid,u));
 const partUnlocked=pid=>pid===1||partDone(pid-1);
-function unitUnlocked(pid,u){if(!partUnlocked(pid))return false;const us=units(P(pid)),i=uIndex(P(pid),u);if(planBlocks(pid,u))return false;return i<=0||isDone(pid,us[i-1]);}
+function unitUnlocked(pid,u){if(!partUnlocked(pid))return false;const us=units(P(pid)),i=uIndex(P(pid),u);if(planBlocks(pid,u))return false;let j=i-1;while(j>=0&&us[j].k==='e')j--;return j<0||isDone(pid,us[j]);}
 // plan günü bir dərsə bağlıdır: plan bitməyincə ondan sonrakı dərslər açılmır (Fuad, 2026-10-15)
 function planBlocks(pid,u){const pin=S.v2&&S.v2.active&&!S.v2.off&&S.v2.pin;return !!(pin&&pin.pd===((S.v2.pday)||1)&&pin.p===pid&&uIndex(P(pid),u)>uIndex(P(pid),pin.u));}
 const partPct=pid=>{const us=units(P(pid));return Math.round(us.filter(u=>isDone(pid,u)).length/us.length*100);};
@@ -982,6 +982,7 @@ function snapshot(name){
   if(NATIVE){try{NATIVE.postMessage({cmd:'snapshot',name,data});}catch(e){}}
 }
 function v2Init(){
+  if(S.cursor&&S.cursor.u&&S.cursor.u.k==='e'){let nx=nextUnit(S.cursor.p,S.cursor.u);while(nx&&nx.u.k==='e')nx=nextUnit(nx.p,nx.u);if(nx&&nx.p===S.cursor.p){S.cursor=nx;persist();}}
   if(S.v2){if(!S.v2.off1){S.v2.off=true;S.v2.off1=true;persist();}gramMigrate();if(v2on())planPin();if(!S.v2.phr1&&typeof PHRASES!=='undefined'){phrAddSrs(PHRASES.filter(x=>x.pd<(S.v2.pday||1)),today());S.v2.phr1=true;persist();}
   if(!S.v2.fixRead1&&S.pdone&&S.pdone[1]){S.pdone[1].read=true;S.v2.fixRead1=true;persist();}
   if(!S.v2.pday){S.v2.pday=1;S.pdone={1:{vocab:true},2:{vocab:!!((S.daylog||{})['2026-10-08']||{}).vocab}};persist();}
@@ -1183,7 +1184,7 @@ function markDone(pid,u){
   if(u.k==='l')srsAddLesson(pid,u.n,1);
   if(u.k==='l'&&typeof v2on==='function'&&v2on())markDay('vocab');
   if(S.cursor.p===pid&&uIndex(P(pid),S.cursor.u)<=uIndex(P(pid),u)){
-    const nx=nextUnit(pid,u);
+    let nx=nextUnit(pid,u);while(nx&&nx.u.k==='e')nx=nextUnit(nx.p,nx.u);
     if(nx){if(nx.p!==pid){if(partDone(pid)){S.cursor=nx;selPart=nx.p;toast(P(nx.p).name+' açıldı 🔓');}}else{S.cursor=nx;}}
   }
   save();updateRing();
